@@ -40,6 +40,7 @@ from datasets import download_and_convert_cifar10
 from datasets import download_and_convert_flowers
 from datasets import download_and_convert_mnist
 from datasets import download_and_convert_endoscopy
+from datasets import download_and_convert_forensics_case1
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -68,6 +69,8 @@ def main(_):
     download_and_convert_mnist.run(FLAGS.dataset_dir)
   elif FLAGS.dataset_name == 'endoscopy':
     download_and_convert_endoscopy.run(FLAGS.dataset_dir)
+  elif FLAGS.dataset_name == 'forensics_case1':
+    download_and_convert_forensics_case1.run(FLAGS.dataset_dir)
   else:
     raise ValueError(
         'dataset_name [%s] was not recognized.' % FLAGS.dataset_name)

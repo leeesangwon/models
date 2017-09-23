@@ -23,13 +23,15 @@ from datasets import flowers
 from datasets import imagenet
 from datasets import mnist
 from datasets import endoscopy
+from datasets import forensics_case1
 
 datasets_map = {
     'cifar10': cifar10,
     'flowers': flowers,
     'imagenet': imagenet,
     'mnist': mnist,
-    'endoscopy': endoscopy
+    'endoscopy': endoscopy,
+    'forensics_case1': forensics_case1
 }
 
 
