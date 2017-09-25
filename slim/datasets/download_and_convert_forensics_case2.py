@@ -80,11 +80,11 @@ def _get_filenames_and_classes(dataset_dir):
     A list of image file paths, relative to `dataset_dir` and the list of
     subdirectories, representing class names.
   """
-  forensics_case1_root = os.path.join(dataset_dir, 'train')
+  forensics_case2_root = os.path.join(dataset_dir, 'train')
   directories = []
   class_names = []
-  for filename in os.listdir(forensics_case1_root):
-    path = os.path.join(forensics_case1_root, filename)
+  for filename in os.listdir(forensics_case2_root):
+    path = os.path.join(forensics_case2_root, filename)
     if os.path.isdir(path):
       directories.append(path)
       class_names.append(filename)
@@ -99,7 +99,7 @@ def _get_filenames_and_classes(dataset_dir):
 
 
 def _get_dataset_filename(dataset_dir, split_name, shard_id):
-  output_filename = 'forensics_case1_%s_%05d-of-%05d.tfrecord' % (
+  output_filename = 'forensics_case2_%s_%05d-of-%05d.tfrecord' % (
       split_name, shard_id, _NUM_SHARDS)
   return os.path.join(dataset_dir, output_filename)
 

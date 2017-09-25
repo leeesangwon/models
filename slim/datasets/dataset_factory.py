@@ -24,7 +24,9 @@ from datasets import imagenet
 from datasets import mnist
 from datasets import endoscopy
 from datasets import forensics_case1
+from datasets import forensics_case2
 from datasets import forensics_case3
+from datasets import forensics_case4
 from datasets import forensics_ccoco
 from datasets import forensics_rcoco
 
@@ -35,7 +37,9 @@ datasets_map = {
     'mnist': mnist,
     'endoscopy': endoscopy,
     'forensics_case1': forensics_case1,
+    'forensics_case2': forensics_case2,
     'forensics_case3': forensics_case3,
+    'forensics_case4': forensics_case4,
     'forensics_ccoco': forensics_ccoco,
     'forensics_rcoco': forensics_rcoco
 }

@@ -29,7 +29,7 @@ from datasets import dataset_utils
 
 slim = tf.contrib.slim
 
-_FILE_PATTERN = 'forensics_case1_%s_*.tfrecord'
+_FILE_PATTERN = 'forensics_case2_%s_*.tfrecord'
 
 SPLITS_TO_SIZES = {'train': 12000, 'validation': 4000}
 

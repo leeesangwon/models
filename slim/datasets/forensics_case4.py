@@ -29,11 +29,11 @@ from datasets import dataset_utils
 
 slim = tf.contrib.slim
 
-_FILE_PATTERN = 'forensics_case1_%s_*.tfrecord'
+_FILE_PATTERN = 'forensics_case4_%s_*.tfrecord'
 
-SPLITS_TO_SIZES = {'train': 12000, 'validation': 4000}
+SPLITS_TO_SIZES = {'train': 21000, 'validation': 7000}
 
-_NUM_CLASSES = 2
+_NUM_CLASSES = 3
 
 _ITEMS_TO_DESCRIPTIONS = {
     'image': 'A color image of varying size.',

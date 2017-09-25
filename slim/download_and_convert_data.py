@@ -41,7 +41,9 @@ from datasets import download_and_convert_flowers
 from datasets import download_and_convert_mnist
 from datasets import download_and_convert_endoscopy
 from datasets import download_and_convert_forensics_case1
+from datasets import download_and_convert_forensics_case2
 from datasets import download_and_convert_forensics_case3
+from datasets import download_and_convert_forensics_case4
 from datasets import download_and_convert_forensics_ccoco
 from datasets import download_and_convert_forensics_rcoco
 
@@ -74,8 +76,12 @@ def main(_):
     download_and_convert_endoscopy.run(FLAGS.dataset_dir)
   elif FLAGS.dataset_name == 'forensics_case1':
     download_and_convert_forensics_case1.run(FLAGS.dataset_dir)
+  elif FLAGS.dataset_name == 'forensics_case2':
+    download_and_convert_forensics_case2.run(FLAGS.dataset_dir)
   elif FLAGS.dataset_name == 'forensics_case3':
     download_and_convert_forensics_case3.run(FLAGS.dataset_dir)
+  elif FLAGS.dataset_name == 'forensics_case4':
+    download_and_convert_forensics_case4.run(FLAGS.dataset_dir)
   elif FLAGS.dataset_name == 'forensics_ccoco':
     download_and_convert_forensics_ccoco.run(FLAGS.dataset_dir)
   elif FLAGS.dataset_name == 'forensics_rcoco':

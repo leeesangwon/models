@@ -40,7 +40,7 @@ from datasets import dataset_utils
 #_DATA_URL = 'http://download.tensorflow.org/example_images/flower_photos.tgz'
 
 # The number of images in the validation set.
-_NUM_VALIDATION = 4000
+_NUM_VALIDATION = 7000
 
 # Seed for repeatability.
 _RANDOM_SEED = 0
@@ -80,11 +80,11 @@ def _get_filenames_and_classes(dataset_dir):
     A list of image file paths, relative to `dataset_dir` and the list of
     subdirectories, representing class names.
   """
-  forensics_case1_root = os.path.join(dataset_dir, 'train')
+  forensics_case4_root = os.path.join(dataset_dir, 'train')
   directories = []
   class_names = []
-  for filename in os.listdir(forensics_case1_root):
-    path = os.path.join(forensics_case1_root, filename)
+  for filename in os.listdir(forensics_case4_root):
+    path = os.path.join(forensics_case4_root, filename)
     if os.path.isdir(path):
       directories.append(path)
       class_names.append(filename)
@@ -99,7 +99,7 @@ def _get_filenames_and_classes(dataset_dir):
 
 
 def _get_dataset_filename(dataset_dir, split_name, shard_id):
-  output_filename = 'forensics_case1_%s_%05d-of-%05d.tfrecord' % (
+  output_filename = 'forensics_case4_%s_%05d-of-%05d.tfrecord' % (
       split_name, shard_id, _NUM_SHARDS)
   return os.path.join(dataset_dir, output_filename)
 
@@ -192,10 +192,12 @@ def run(dataset_dir):
   class_names_to_ids = dict(zip(class_names, range(len(class_names))))
 
   # Divide into train and test:
+  training_filenames = photo_filenames[:-_NUM_VALIDATION]
+  validation_filenames = photo_filenames[-_NUM_VALIDATION:]
   random.seed(_RANDOM_SEED)
-  random.shuffle(photo_filenames)
-  training_filenames = photo_filenames[_NUM_VALIDATION:]
-  validation_filenames = photo_filenames[:_NUM_VALIDATION]
+  random.shuffle(training_filenames)
+  random.seed(_RANDOM_SEED)
+  random.shuffle(validation_filenames)
 
   # First, convert the training and validation sets.
   _convert_dataset('train', training_filenames, class_names_to_ids,
