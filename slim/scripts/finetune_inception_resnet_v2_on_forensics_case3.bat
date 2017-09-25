@@ -13,8 +13,8 @@ set MODEL_NAME=inception_resnet_v2
 set PREPROCESSING_NAME=inception_resnet_v2_notcrop
 
 :: About dataset
-set DATASET_DIR=\tmp\data\forensics\case1
-set DATASET_NAME=forensics_case1
+set DATASET_DIR=\tmp\data\forensics\case3
+set DATASET_NAME=forensics_case3
 
 :: About training
 set TRAIN_DIR=\tmp\%DATASET_NAME%-models\%MODEL_NAME%\%PREPROCESSING_NAME%
