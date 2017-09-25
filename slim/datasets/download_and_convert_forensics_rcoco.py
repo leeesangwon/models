@@ -40,7 +40,7 @@ from datasets import dataset_utils
 #_DATA_URL = 'http://download.tensorflow.org/example_images/forensic_photos.tgz'
 
 # The number of images in the validation set.
-_NUM_VALIDATION = 7000
+_NUM_VALIDATION = 0
 
 # Seed for repeatability.
 _RANDOM_SEED = 0
@@ -80,11 +80,11 @@ def _get_filenames_and_classes(dataset_dir):
     A list of image file paths, relative to `dataset_dir` and the list of
     subdirectories, representing class names.
   """
-  forensics_ccoco_root = os.path.join(dataset_dir, 'train')
+  forensics_rcoco_root = os.path.join(dataset_dir, 'train')
   directories = []
   class_names = []
-  for filename in os.listdir(forensics_ccoco_root): 
-    path = os.path.join(forensics_ccoco_root, filename)
+  for filename in os.listdir(forensics_rcoco_root): 
+    path = os.path.join(forensics_rcoco_root, filename)
     if os.path.isdir(path):
       directories.append(path)
       class_names.append(filename)
@@ -99,7 +99,7 @@ def _get_filenames_and_classes(dataset_dir):
 
 
 def _get_dataset_filename(dataset_dir, split_name, shard_id):
-  output_filename = 'forensics_ccoco_%s_%05d-of-%05d.tfrecord' % (
+  output_filename = 'forensics_rcoco_%s_%05d-of-%05d.tfrecord' % (
       split_name, shard_id, _NUM_SHARDS)
   return os.path.join(dataset_dir, output_filename)
 

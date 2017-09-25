@@ -192,10 +192,12 @@ def run(dataset_dir):
   class_names_to_ids = dict(zip(class_names, range(len(class_names))))
 
   # Divide into train and test:
-#   random.seed(_RANDOM_SEED)
-#   random.shuffle(photo_filenames)
   training_filenames = photo_filenames[:-_NUM_VALIDATION]
   validation_filenames = photo_filenames[-_NUM_VALIDATION:]
+  random.seed(_RANDOM_SEED)
+  random.shuffle(training_filenames)
+  random.seed(_RANDOM_SEED)
+  random.shuffle(validation_filenames)
 
   # First, convert the training and validation sets.
   _convert_dataset('train', training_filenames, class_names_to_ids,

@@ -26,6 +26,7 @@ from datasets import endoscopy
 from datasets import forensics_case1
 from datasets import forensics_case3
 from datasets import forensics_ccoco
+from datasets import forensics_rcoco
 
 datasets_map = {
     'cifar10': cifar10,
@@ -35,7 +36,8 @@ datasets_map = {
     'endoscopy': endoscopy,
     'forensics_case1': forensics_case1,
     'forensics_case3': forensics_case3,
-    'forensics_ccoco': forensics_ccoco
+    'forensics_ccoco': forensics_ccoco,
+    'forensics_rcoco': forensics_rcoco
 }
 
 

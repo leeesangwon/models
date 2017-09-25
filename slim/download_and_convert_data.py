@@ -43,6 +43,7 @@ from datasets import download_and_convert_endoscopy
 from datasets import download_and_convert_forensics_case1
 from datasets import download_and_convert_forensics_case3
 from datasets import download_and_convert_forensics_ccoco
+from datasets import download_and_convert_forensics_rcoco
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -77,6 +78,8 @@ def main(_):
     download_and_convert_forensics_case3.run(FLAGS.dataset_dir)
   elif FLAGS.dataset_name == 'forensics_ccoco':
     download_and_convert_forensics_ccoco.run(FLAGS.dataset_dir)
+  elif FLAGS.dataset_name == 'forensics_rcoco':
+    download_and_convert_forensics_rcoco.run(FLAGS.dataset_dir)
   else:
     raise ValueError(
         'dataset_name [%s] was not recognized.' % FLAGS.dataset_name)
