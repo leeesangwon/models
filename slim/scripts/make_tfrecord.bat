@@ -1,1 +1,1 @@
-python download_and_convert_data.py --dataset_name=forensics_case4 --dataset_dir=/tmp/data/forensics/case4
+python download_and_convert_data.py --dataset_name=forensics_case2 --dataset_dir=/tmp/data/forensics/case2
