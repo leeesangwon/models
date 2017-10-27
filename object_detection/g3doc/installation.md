@@ -69,6 +69,37 @@ Note: This command needs to run from every new terminal you start. If you wish
 to avoid running this manually, you can add it as a new line to the end of your
 ~/.bashrc file.
 
+If you wish to avoid running this manually, you can add it as a new line to the .../venv/.../activate file. like bellow
+
+``` bash
+...
+deactivate () {
+    ...
+    # reset old environment variables
+    ...
+    if ! [ -z "${_OLD_PYTHONPATH+_}" ] ; then
+        PYTHONPATH="$_OLD_PYTHONPATH"
+        export PYTHONPATH
+        unset _OLD_PYTHONPATH
+    fi
+    ...
+}
+
+...
+
+# Add tensorflow/models and tensorflow/models/slim library to PYTHONPATH
+TF_MODELS_PATH="/home/sangwon/Projects/tensorflow/models"
+_OLD_PYTHONPATH="$PYTHONPATH"
+PYTHONPATH="$PYTHONPAH:$TF_MODELS_PATH:$TF_MODELS_PATH/slim"
+unset TF_MODELS_PATH
+export PYTHONPATH
+
+...
+
+# This should detect bash and zsh, which have a hash command that must
+...
+```
+
 # Testing the Installation
 
 You can test that you have correctly installed the Tensorflow Object Detection\
