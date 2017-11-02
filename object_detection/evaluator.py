@@ -186,12 +186,8 @@ def evaluate(create_input_dict_fn, create_model_fn, eval_config, categories,
   if eval_config.use_moving_averages:
     variable_averages = tf.train.ExponentialMovingAverage(0.0)
     variables_to_restore = variable_averages.variables_to_restore()
-  saver = tf.train.Saver(variables_to_restore)
-  def _restore_latest_checkpoint(sess):
-    latest_checkpoint = tf.train.latest_checkpoint(checkpoint_dir)
-    saver.restore(sess, latest_checkpoint)
 
-  eval_util.repeated_checkpoint_run(
+  eval_util.listed_checkpoint_run(
       tensor_dict=tensor_dict,
       update_op=tf.no_op(),
       summary_dir=eval_dir,
@@ -199,7 +195,7 @@ def evaluate(create_input_dict_fn, create_model_fn, eval_config, categories,
       batch_processor=_process_batch,
       checkpoint_dirs=[checkpoint_dir],
       variables_to_restore=None,
-      restore_fn=_restore_latest_checkpoint,
+      restore_fn=None,
       num_batches=eval_config.num_examples,
       eval_interval_secs=eval_config.eval_interval_secs,
       max_number_of_evaluations=(

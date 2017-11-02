@@ -522,3 +522,57 @@ def repeated_checkpoint_run(tensor_dict,
     time_to_next_eval = start + eval_interval_secs - time.time()
     if time_to_next_eval > 0:
       time.sleep(time_to_next_eval)
+
+
+def listed_checkpoint_run(tensor_dict,
+                            update_op,
+                            summary_dir,
+                            aggregated_result_processor=None,
+                            batch_processor=None,
+                            checkpoint_dirs=None,
+                            variables_to_restore=None,
+                            restore_fn=None,
+                            num_batches=1,
+                            eval_interval_secs=120,
+                            max_number_of_evaluations=None,
+                            master='',
+                            save_graph=False,
+                            save_graph_dir='',
+                            metric_names_to_values=None,
+                            keys_to_exclude_from_results=()):
+  if max_number_of_evaluations and max_number_of_evaluations <= 0:
+    raise ValueError(
+        '`number_of_steps` must be either None or a positive number.')
+
+  if not checkpoint_dirs:
+    raise ValueError('`checkpoint_dirs` must have at least one entry.')
+
+  last_evaluated_model_path = None
+  number_of_evaluations = 0
+  ckpt = tf.train.get_checkpoint_state(checkpoint_dirs[0])
+  saver = tf.train.Saver(variables_to_restore)
+
+  for model_path in ckpt.all_model_checkpoint_paths:
+    start = time.time()
+    logging.info('Starting evaluation at ' + time.strftime('%Y-%m-%d-%H:%M:%S',
+                                                           time.gmtime()))
+    if not model_path:
+      logging.info('No model found in %s. Will try again in %d seconds',
+                   checkpoint_dirs[0], eval_interval_secs)
+    def _restore_listed_checkpoint(sess):
+      saver.restore(sess, model_path)
+    run_checkpoint_once(tensor_dict, update_op, summary_dir,
+                        aggregated_result_processor,
+                        batch_processor, checkpoint_dirs,
+                        variables_to_restore, _restore_listed_checkpoint, num_batches, master,
+                        save_graph, save_graph_dir, metric_names_to_values,
+                        keys_to_exclude_from_results)
+    number_of_evaluations += 1
+
+    if (max_number_of_evaluations and
+        number_of_evaluations >= max_number_of_evaluations):
+      logging.info('Finished evaluation!')
+      break
+    time_to_next_eval = start + eval_interval_secs - time.time()
+    if time_to_next_eval > 0:
+      time.sleep(time_to_next_eval)
