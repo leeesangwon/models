@@ -40,7 +40,7 @@ from datasets import dataset_utils
 #_DATA_URL = 'http://download.tensorflow.org/example_images/flower_photos.tgz'
 
 # The number of images in the validation set.
-_NUM_VALIDATION = 49
+_VALIDATION_RATIO = 0.2
 
 # Seed for repeatability.
 _RANDOM_SEED = 0
@@ -48,6 +48,7 @@ _RANDOM_SEED = 0
 # The number of shards per dataset split.
 _NUM_SHARDS = 1
 
+_DATASET_SUBNAME = "E"
 
 class ImageReader(object):
   """Helper class that provides TensorFlow image coding utilities."""
@@ -80,7 +81,7 @@ def _get_filenames_and_classes(dataset_dir):
     A list of image file paths, relative to `dataset_dir` and the list of
     subdirectories, representing class names.
   """
-  endoscopy_root = os.path.join(dataset_dir, 'endoscopy_photos_addbmp349')
+  endoscopy_root = os.path.join(dataset_dir, '../data_'+_DATASET_SUBNAME)
   directories = []
   class_names = []
   for filename in os.listdir(endoscopy_root):
@@ -99,8 +100,8 @@ def _get_filenames_and_classes(dataset_dir):
 
 
 def _get_dataset_filename(dataset_dir, split_name, shard_id):
-  output_filename = 'endoscopy349_%s_%05d-of-%05d.tfrecord' % (
-      split_name, shard_id, _NUM_SHARDS)
+  output_filename = 'cls_data_%s_%s_%05d-of-%05d.tfrecord' % (
+      _DATASET_SUBNAME, split_name, shard_id, _NUM_SHARDS)
   return os.path.join(dataset_dir, output_filename)
 
 
@@ -194,8 +195,16 @@ def run(dataset_dir):
   # Divide into train and test:
   random.seed(_RANDOM_SEED)
   random.shuffle(photo_filenames)
-  training_filenames = photo_filenames[_NUM_VALIDATION:]
-  validation_filenames = photo_filenames[:_NUM_VALIDATION]
+  training_filenames = []
+  validation_filenames = []
+  for class_name in class_names:
+    target_filenames = []
+    for photo in photo_filenames:
+      if os.path.basename(os.path.dirname(photo)) == class_name:
+        target_filenames.append(photo)
+    num_validation = round(len(target_filenames)*_VALIDATION_RATIO)
+    training_filenames += target_filenames[num_validation:]
+    validation_filenames += target_filenames[:num_validation]
 
   # First, convert the training and validation sets.
   _convert_dataset('train', training_filenames, class_names_to_ids,
@@ -208,4 +217,14 @@ def run(dataset_dir):
   dataset_utils.write_label_file(labels_to_class_names, dataset_dir)
 
   #_clean_up_temporary_files(dataset_dir)
-  print('\nFinished converting the Flowers dataset!')
+  print('\nFinished converting the Endoscopy dataset!')
+
+
+if __name__=='__main__':
+  assert len(sys.argv) == 1 or len(sys.argv) == 2, 'ERROR: Too many arguments'
+  if len(sys.argv) == 1:
+      DIR = os.getcwd()
+  else:
+      DIR = sys.argv[1]
+
+  run(DIR)

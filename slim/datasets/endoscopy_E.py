@@ -29,13 +29,13 @@ from datasets import dataset_utils
 
 slim = tf.contrib.slim
 
-_FILE_PATTERN = 'endoscopy349_%s_*.tfrecord'
-SPLITS_TO_SIZES = {'train': 300, 'validation': 49}
-_NUM_CLASSES = 2
+_FILE_PATTERN = 'cls_data_E_%s_*.tfrecord'
+SPLITS_TO_SIZES = {'train': 586, 'validation': 146}
+_NUM_CLASSES = 3
 
 _ITEMS_TO_DESCRIPTIONS = {
     'image': 'A color image of varying size.',
-    'label': 'A single integer between 0 and 1',
+    'label': 'A single integer between 0 and 2',
 }
 
 

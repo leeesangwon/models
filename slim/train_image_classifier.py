@@ -552,7 +552,8 @@ def main(_):
     # Merge all summaries together.
     summary_op = tf.summary.merge(list(summaries), name='summary_op')
 
-
+    saver = tf.train.Saver(
+        max_to_keep=30)
     ###########################
     # Kicks off the training. #
     ###########################
@@ -567,7 +568,8 @@ def main(_):
         log_every_n_steps=FLAGS.log_every_n_steps,
         save_summaries_secs=FLAGS.save_summaries_secs,
         save_interval_secs=FLAGS.save_interval_secs,
-        sync_optimizer=optimizer if FLAGS.sync_replicas else None)
+        sync_optimizer=optimizer if FLAGS.sync_replicas else None,
+        saver=saver)
 
 
 if __name__ == '__main__':
