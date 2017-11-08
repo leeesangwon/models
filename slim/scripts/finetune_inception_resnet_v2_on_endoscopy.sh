@@ -23,7 +23,8 @@ do
 
     # About training
     TRAIN_DIR=${PROJECTS_DIR}/TRAIN/CLASSIFICATION/${DATASET_NAME}-models/${MODEL_NAME}/${PREPROCESSING_NAME}
-    BATCH_SIZE=32
+    TRAIN_BATCH_SIZE=32
+    EVAL_BATCH_SIZE=2
     MAX_NUMBER_OF_STEPS=10000
     EVALUATE_INTERVAL=1000
 
@@ -41,7 +42,7 @@ do
             --checkpoint_exclude_scopes=InceptionResnetV2/Logits,InceptionResnetV2/AuxLogits \
             --trainable_scopes=InceptionResnetV2/Logits,InceptionResnetV2/AuxLogits \
             --max_number_of_steps=${j} \
-            --batch_size=${BATCH_SIZE} \
+            --batch_size=${TRAIN_BATCH_SIZE} \
             --save_interval_secs=60 \
             --save_summaries_secs=60 \
             --log_every_n_steps=10 \
@@ -50,6 +51,7 @@ do
 
         # Run evaluation.
         python eval_image_classifier.py \
+            --batch_size=${EVAL_BATCH_SIZE} \
             --checkpoint_path=${TRAIN_DIR} \
             --eval_dir=${TRAIN_DIR}/eval \
             --dataset_name=${DATASET_NAME} \
