@@ -34,6 +34,8 @@ from __future__ import absolute_import
 from __future__ import division
 from __future__ import print_function
 
+import re
+
 import tensorflow as tf
 
 from datasets import download_and_convert_cifar10
@@ -60,13 +62,14 @@ def main(_):
   if not FLAGS.dataset_dir:
     raise ValueError('You must supply the dataset directory with --dataset_dir')
 
+  re_endoscopy = re.compile('endoscopy*')
   if FLAGS.dataset_name == 'cifar10':
     download_and_convert_cifar10.run(FLAGS.dataset_dir)
   elif FLAGS.dataset_name == 'flowers':
     download_and_convert_flowers.run(FLAGS.dataset_dir)
   elif FLAGS.dataset_name == 'mnist':
     download_and_convert_mnist.run(FLAGS.dataset_dir)
-  elif FLAGS.dataset_name == 'endoscopy':
+  elif re_endoscopy.match(FLAGS.dataset_name):
     download_and_convert_endoscopy.run(FLAGS.dataset_dir)
   else:
     raise ValueError(

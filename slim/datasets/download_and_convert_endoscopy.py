@@ -48,8 +48,6 @@ _RANDOM_SEED = 0
 # The number of shards per dataset split.
 _NUM_SHARDS = 1
 
-_DATASET_SUBNAME = "E"
-
 class ImageReader(object):
   """Helper class that provides TensorFlow image coding utilities."""
 
@@ -81,7 +79,7 @@ def _get_filenames_and_classes(dataset_dir):
     A list of image file paths, relative to `dataset_dir` and the list of
     subdirectories, representing class names.
   """
-  endoscopy_root = os.path.join(dataset_dir, '../data_'+_DATASET_SUBNAME)
+  endoscopy_root = os.path.join(dataset_dir)
   directories = []
   class_names = []
   for filename in os.listdir(endoscopy_root):
@@ -101,7 +99,7 @@ def _get_filenames_and_classes(dataset_dir):
 
 def _get_dataset_filename(dataset_dir, split_name, shard_id):
   output_filename = 'cls_data_%s_%s_%05d-of-%05d.tfrecord' % (
-      _DATASET_SUBNAME, split_name, shard_id, _NUM_SHARDS)
+      os.path.basename(dataset_dir).split('_')[-1], split_name, shard_id, _NUM_SHARDS)
   return os.path.join(dataset_dir, output_filename)
 
 

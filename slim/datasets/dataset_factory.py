@@ -23,13 +23,23 @@ from datasets import flowers
 from datasets import imagenet
 from datasets import mnist
 from datasets import endoscopy
+from datasets import endoscopy_A
+from datasets import endoscopy_B
+from datasets import endoscopy_C
+from datasets import endoscopy_D
+from datasets import endoscopy_E
 
 datasets_map = {
     'cifar10': cifar10,
     'flowers': flowers,
     'imagenet': imagenet,
     'mnist': mnist,
-    'endoscopy': endoscopy
+    'endoscopy': endoscopy,
+    'endoscopy_A': endoscopy_A,
+    'endoscopy_B': endoscopy_B,
+    'endoscopy_C': endoscopy_C,
+    'endoscopy_D': endoscopy_D,
+    'endoscopy_E': endoscopy_E
 }
 
 

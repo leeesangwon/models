@@ -90,3 +90,6 @@ ENV/
 
 # PyCharm
 .idea/
+
+# pb2
+*_pb2.py
