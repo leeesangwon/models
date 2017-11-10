@@ -29,8 +29,9 @@ from datasets import dataset_utils
 
 slim = tf.contrib.slim
 
-_FILE_PATTERN = 'cls_data_D_%s_*.tfrecord'
-SPLITS_TO_SIZES = {'train': 585, 'validation': 147}
+_FILE_PATTERN = 'cls_data_D_0_%s_*.tfrecord'
+SPLITS_TO_SIZES = {'train': 585, 'validation': 147}     # cross_val_num: 0, 1, 2, 3
+#SPLITS_TO_SIZES = {'train': 588, 'validation': 144}     # cross_val_num: 4
 _NUM_CLASSES = 5
 
 _ITEMS_TO_DESCRIPTIONS = {

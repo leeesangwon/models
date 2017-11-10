@@ -29,7 +29,7 @@ from datasets import dataset_utils
 
 slim = tf.contrib.slim
 
-_FILE_PATTERN = 'cls_data_C_%s_*.tfrecord'
+_FILE_PATTERN = 'cls_data_C_0_%s_*.tfrecord'
 SPLITS_TO_SIZES = {'train': 586, 'validation': 146}
 _NUM_CLASSES = 4
 

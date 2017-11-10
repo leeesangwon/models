@@ -58,6 +58,9 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_string(
     'dataset_dir', None, 'The directory where the dataset files are stored.')
 
+tf.app.flags.DEFINE_string(
+    'dataset_file_pattern', None, 'The dataset file patterns.')
+
 tf.app.flags.DEFINE_integer(
     'labels_offset', 0,
     'An offset for the labels in the dataset. This flag is primarily used to '
@@ -94,7 +97,7 @@ def main(_):
     # Select the dataset #
     ######################
     dataset = dataset_factory.get_dataset(
-        FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
+        FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir, FLAGS.dataset_file_pattern)
 
     ####################
     # Select the model #
@@ -153,8 +156,8 @@ def main(_):
     # Define the metrics:
     names_to_values, names_to_updates = slim.metrics.aggregate_metric_map({
         'Accuracy': slim.metrics.streaming_accuracy(predictions, labels),
-        'Recall_5': slim.metrics.streaming_recall_at_k(
-            logits, labels, 5),
+        'Recall_1': slim.metrics.streaming_recall_at_k(
+            logits, labels, 1),
     })
 
     # Print the summaries to screen.
