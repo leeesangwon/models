@@ -158,8 +158,13 @@ def main(_):
     else:
       variables_to_restore = slim.get_variables_to_restore()
 
+    # One Hot label
+    onehotlabels = slim.one_hot_encoding(labels, dataset.num_classes - FLAGS.labels_offset)
+    loss = slim.losses.softmax_cross_entropy(logits, onehotlabels, label_smoothing=0, weights=1.0)
+
     predictions = tf.argmax(logits, 1)
     labels = tf.squeeze(labels)
+
     # Define the metrics:
     metrics_dict = {
         'Accuracy': slim.metrics.streaming_accuracy(predictions, labels),
@@ -177,6 +182,11 @@ def main(_):
       op = tf.summary.scalar(summary_name, value, collections=[])
       op = tf.Print(op, [value], summary_name)
       tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
+
+    summary_name = 'eval/Loss'
+    op = tf.summary.scalar(summary_name, loss, collections=[])
+    op = tf.Print(op, [loss], summary_name)
+    tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
     # TODO(sguada) use num_epochs=1
     if FLAGS.max_num_batches:
