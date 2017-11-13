@@ -27,6 +27,14 @@ from preprocessing import preprocessing_factory
 
 slim = tf.contrib.slim
 
+_NUM_OF_CLASSES = {
+    'endoscopy_A': 2,
+    'endoscopy_B': 3,
+    'endoscopy_C': 4,
+    'endoscopy_D': 5,
+    'endoscopy_E': 3,
+}
+
 tf.app.flags.DEFINE_integer(
     'batch_size', 100, 'The number of samples in each batch.')
 
@@ -152,13 +160,16 @@ def main(_):
 
     predictions = tf.argmax(logits, 1)
     labels = tf.squeeze(labels)
-
     # Define the metrics:
-    names_to_values, names_to_updates = slim.metrics.aggregate_metric_map({
+    metrics_dict = {
         'Accuracy': slim.metrics.streaming_accuracy(predictions, labels),
         'Recall_1': slim.metrics.streaming_recall_at_k(
             logits, labels, 1),
-    })
+    }
+    for i in range(_NUM_OF_CLASSES[FLAGS.dataset_name]):
+        weights = tf.cast(tf.equal(labels, tf.constant(i, dtype=labels.dtype, shape=labels.get_shape())), dtype=tf.int64)
+        metrics_dict['Accuracy_'+str(i)] = slim.metrics.streaming_accuracy(predictions, labels, weights)
+    names_to_values, names_to_updates = slim.metrics.aggregate_metric_map(metrics_dict)
 
     # Print the summaries to screen.
     for name, value in names_to_values.items():
