@@ -309,6 +309,7 @@ def preprocess_for_train(image,
       [], minval=resize_side_min, maxval=resize_side_max+1, dtype=tf.int32)
 
   image = _aspect_preserving_resize(image, resize_side)
+  image = tf.image.resize_images(image, [output_height, output_width])
   image.set_shape([output_height, output_width, 3])
   image = tf.to_float(image)
   image = tf.image.random_flip_left_right(image)

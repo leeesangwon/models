@@ -11,8 +11,9 @@ PROJECTS_DIR=/home/sangwon/Projects/Medical
 
 # About base model
 PRETRAINED_CHECKPOINT_DIR=${PROJECTS_DIR}/PretrainedModel
-MODEL_NAME=inception_resnet_v2
-PREPROCESSING_NAME=inception_resnet_v2_notcrop
+MODEL_NAME=vgg_16
+PREPROCESSING_NAME=vgg_16
+START_DATE=$(date '+%F_%T')
 
 # About dataset
 DATA_SUBNAMES=(A B C D E)
@@ -23,7 +24,7 @@ do
     DATASET_FILE_PATTERN=cls_data_${DATA_SUBNAMES[$i]}_0_%s_*.tfrecord
 
     # About training
-    TRAIN_DIR=${PROJECTS_DIR}/TRAIN/CLASSIFICATION/${DATASET_NAME}-models/${MODEL_NAME}_${PREPROCESSING_NAME}/$(date '+%F %T')
+    TRAIN_DIR=${PROJECTS_DIR}/TRAIN/CLASSIFICATION/${DATASET_NAME}-models/${MODEL_NAME}_${PREPROCESSING_NAME}/${START_DATE}
     TRAIN_BATCH_SIZE=32
     EVAL_BATCH_SIZE=2
     MAX_NUMBER_OF_STEPS=10000
@@ -40,9 +41,9 @@ do
             --dataset_file_pattern=${DATASET_FILE_PATTERN} \
             --model_name=${MODEL_NAME} \
             --preprocessing_name=${PREPROCESSING_NAME} \
-            --checkpoint_path=${PRETRAINED_CHECKPOINT_DIR}/${MODEL_NAME}*.ckpt \
-            --checkpoint_exclude_scopes=InceptionResnetV2/Logits,InceptionResnetV2/AuxLogits \
-            --trainable_scopes=InceptionResnetV2/Logits,InceptionResnetV2/AuxLogits \
+            --checkpoint_path=${PRETRAINED_CHECKPOINT_DIR}/${MODEL_NAME}.ckpt \
+            --checkpoint_exclude_scopes=vgg_16/fc8 \
+            --trainable_scopes=vgg_16/fc8 \
             --max_number_of_steps=${j} \
             --batch_size=${TRAIN_BATCH_SIZE} \
             --save_interval_secs=600 \
