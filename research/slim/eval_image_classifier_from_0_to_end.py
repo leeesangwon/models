@@ -183,7 +183,7 @@ def main(_):
     bool_labels = tf.cast(labels, dtype=tf.bool)
     bin_labels = tf.cast(bool_labels, dtype=tf.int64)
     metrics_dict['Accuracy_binary'] = slim.metrics.streaming_accuracy(bin_predictions, bin_labels)
-    
+
     names_to_values, names_to_updates = slim.metrics.aggregate_metric_map(metrics_dict)
 
     # Print the summaries to screen.
@@ -205,20 +205,23 @@ def main(_):
       # This ensures that we make a single pass over all of the data.
       num_batches = math.ceil(dataset.num_samples / float(FLAGS.batch_size))
 
-    if tf.gfile.IsDirectory(FLAGS.checkpoint_path):
-      checkpoint_path = tf.train.latest_checkpoint(FLAGS.checkpoint_path)
-    else:
-      checkpoint_path = FLAGS.checkpoint_path
+    # if tf.gfile.IsDirectory(FLAGS.checkpoint_path):
+    #   checkpoint_path = tf.train.latest_checkpoint(FLAGS.checkpoint_path)
+    # else:
+    #   checkpoint_path = FLAGS.checkpoint_path
 
-    tf.logging.info('Evaluating %s' % checkpoint_path)
-
-    slim.evaluation.evaluate_once(
-        master=FLAGS.master,
-        checkpoint_path=checkpoint_path,
-        logdir=FLAGS.eval_dir,
-        num_evals=num_batches,
-        eval_op=list(names_to_updates.values()),
-        variables_to_restore=variables_to_restore)
+    # tf.logging.info('Evaluating %s' % checkpoint_path)
+    
+    ckpt = tf.train.get_checkpoint_state(FLAGS.checkpoint_path)
+    for checkpoint in ckpt.all_model_checkpoint_paths:
+        tf.logging.info('Evaluating %s' % checkpoint)
+        slim.evaluation.evaluate_once(
+            master=FLAGS.master,
+            checkpoint_path=checkpoint,
+            logdir=FLAGS.eval_dir,
+            num_evals=num_batches,
+            eval_op=list(names_to_updates.values()),
+            variables_to_restore=variables_to_restore)
 
 
 if __name__ == '__main__':
