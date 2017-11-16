@@ -27,6 +27,16 @@ from preprocessing import preprocessing_factory
 
 slim = tf.contrib.slim
 
+_NUM_OF_CLASSES = {
+    'endoscopy_A': 2,
+    'endoscopy_A_equal': 2,
+    'endoscopy_B': 3,
+    'endoscopy_C': 4,
+    'endoscopy_D': 5,
+    'endoscopy_E': 3,
+    'endoscopy_E_equal': 3,
+}
+
 tf.app.flags.DEFINE_integer(
     'batch_size', 100, 'The number of samples in each batch.')
 
@@ -57,6 +67,9 @@ tf.app.flags.DEFINE_string(
 
 tf.app.flags.DEFINE_string(
     'dataset_dir', None, 'The directory where the dataset files are stored.')
+
+tf.app.flags.DEFINE_string(
+    'dataset_file_pattern', None, 'The dataset file patterns.')
 
 tf.app.flags.DEFINE_integer(
     'labels_offset', 0,
@@ -94,7 +107,7 @@ def main(_):
     # Select the dataset #
     ######################
     dataset = dataset_factory.get_dataset(
-        FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
+        FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir, FLAGS.dataset_file_pattern)
 
     ####################
     # Select the model #
@@ -147,15 +160,23 @@ def main(_):
     else:
       variables_to_restore = slim.get_variables_to_restore()
 
+    # One Hot label
+    onehotlabels = slim.one_hot_encoding(labels, dataset.num_classes - FLAGS.labels_offset)
+    loss = slim.losses.softmax_cross_entropy(logits, onehotlabels, label_smoothing=0, weights=1.0)
+
     predictions = tf.argmax(logits, 1)
     labels = tf.squeeze(labels)
 
     # Define the metrics:
-    names_to_values, names_to_updates = slim.metrics.aggregate_metric_map({
+    metrics_dict = {
         'Accuracy': slim.metrics.streaming_accuracy(predictions, labels),
-        'Recall_5': slim.metrics.streaming_recall_at_k(
-            logits, labels, 5),
-    })
+        'Recall_1': slim.metrics.streaming_recall_at_k(
+            logits, labels, 1),
+    }
+    for i in range(_NUM_OF_CLASSES[FLAGS.dataset_name]):
+        weights = tf.cast(tf.equal(labels, tf.constant(i, dtype=labels.dtype, shape=labels.get_shape())), dtype=tf.int64)
+        metrics_dict['Accuracy_'+str(i)] = slim.metrics.streaming_accuracy(predictions, labels, weights)
+    names_to_values, names_to_updates = slim.metrics.aggregate_metric_map(metrics_dict)
 
     # Print the summaries to screen.
     for name, value in names_to_values.items():
@@ -163,6 +184,11 @@ def main(_):
       op = tf.summary.scalar(summary_name, value, collections=[])
       op = tf.Print(op, [value], summary_name)
       tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
+
+    summary_name = 'eval/Loss'
+    op = tf.summary.scalar(summary_name, loss, collections=[])
+    op = tf.Print(op, [loss], summary_name)
+    tf.add_to_collection(tf.GraphKeys.SUMMARIES, op)
 
     # TODO(sguada) use num_epochs=1
     if FLAGS.max_num_batches:

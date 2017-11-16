@@ -93,3 +93,6 @@ ENV/
 
 # Protobuf
 *pb2.py
+
+# vscode
+*.vscode/*

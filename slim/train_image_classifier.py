@@ -173,6 +173,9 @@ tf.app.flags.DEFINE_string(
 tf.app.flags.DEFINE_string(
     'dataset_dir', None, 'The directory where the dataset files are stored.')
 
+tf.app.flags.DEFINE_string(
+    'dataset_file_pattern', None, 'The dataset file patterns.')
+
 tf.app.flags.DEFINE_integer(
     'labels_offset', 0,
     'An offset for the labels in the dataset. This flag is primarily used to '
@@ -403,7 +406,7 @@ def main(_):
     # Select the dataset #
     ######################
     dataset = dataset_factory.get_dataset(
-        FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir)
+        FLAGS.dataset_name, FLAGS.dataset_split_name, FLAGS.dataset_dir, FLAGS.dataset_file_pattern)
 
     ######################
     # Select the network #
@@ -552,7 +555,8 @@ def main(_):
     # Merge all summaries together.
     summary_op = tf.summary.merge(list(summaries), name='summary_op')
 
-
+    saver = tf.train.Saver(
+        max_to_keep=100)
     ###########################
     # Kicks off the training. #
     ###########################
@@ -567,7 +571,8 @@ def main(_):
         log_every_n_steps=FLAGS.log_every_n_steps,
         save_summaries_secs=FLAGS.save_summaries_secs,
         save_interval_secs=FLAGS.save_interval_secs,
-        sync_optimizer=optimizer if FLAGS.sync_replicas else None)
+        sync_optimizer=optimizer if FLAGS.sync_replicas else None,
+        saver=saver)
 
 
 if __name__ == '__main__':
