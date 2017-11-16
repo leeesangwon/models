@@ -93,3 +93,6 @@ ENV/
 
 # pb2
 *_pb2.py
+
+# vscode
+*.vscode/*
