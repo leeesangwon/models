@@ -30,7 +30,8 @@ from datasets import dataset_utils
 slim = tf.contrib.slim
 
 _FILE_PATTERN = 'cls_data_A_0_%s_*.tfrecord'
-SPLITS_TO_SIZES = {'train': 586, 'validation': 146}
+SPLITS_TO_SIZES = [{'train': 586, 'validation': 146},  # data_A
+                  {'train': 496, 'validation': 124}]   # data_A_equal
 _NUM_CLASSES = 2
 
 _ITEMS_TO_DESCRIPTIONS = {
@@ -56,7 +57,7 @@ def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
   Raises:
     ValueError: if `split_name` is not a valid train/validation split.
   """
-  if split_name not in SPLITS_TO_SIZES:
+  if split_name not in SPLITS_TO_SIZES[0]:
     raise ValueError('split name %s was not recognized.' % split_name)
 
   if not file_pattern:
@@ -86,11 +87,16 @@ def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
   if dataset_utils.has_labels(dataset_dir):
     labels_to_names = dataset_utils.read_label_file(dataset_dir)
 
+  if 'equal' in file_pattern:
+    num_samples = SPLITS_TO_SIZES[1][split_name]
+  else:
+    num_samples = SPLITS_TO_SIZES[0][split_name]
+
   return slim.dataset.Dataset(
       data_sources=file_pattern,
       reader=reader,
       decoder=decoder,
-      num_samples=SPLITS_TO_SIZES[split_name],
+      num_samples=num_samples,
       items_to_descriptions=_ITEMS_TO_DESCRIPTIONS,
       num_classes=_NUM_CLASSES,
       labels_to_names=labels_to_names)

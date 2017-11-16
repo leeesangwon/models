@@ -42,6 +42,7 @@ from datasets import download_and_convert_cifar10
 from datasets import download_and_convert_flowers
 from datasets import download_and_convert_mnist
 from datasets import download_and_convert_endoscopy
+from datasets import download_and_convert_endoscopy_equal
 
 FLAGS = tf.app.flags.FLAGS
 
@@ -62,13 +63,16 @@ def main(_):
   if not FLAGS.dataset_dir:
     raise ValueError('You must supply the dataset directory with --dataset_dir')
 
-  re_endoscopy = re.compile('endoscopy*')
+  re_endoscopy = re.compile('endoscopy.*')
+  re_endo_eq = re.compile('endoscopy.*_equal')
   if FLAGS.dataset_name == 'cifar10':
     download_and_convert_cifar10.run(FLAGS.dataset_dir)
   elif FLAGS.dataset_name == 'flowers':
     download_and_convert_flowers.run(FLAGS.dataset_dir)
   elif FLAGS.dataset_name == 'mnist':
     download_and_convert_mnist.run(FLAGS.dataset_dir)
+  elif re_endo_eq.match(FLAGS.dataset_name):
+    download_and_convert_endoscopy_equal.run(FLAGS.dataset_dir)
   elif re_endoscopy.match(FLAGS.dataset_name):
     download_and_convert_endoscopy.run(FLAGS.dataset_dir)
   else:

@@ -39,7 +39,9 @@ datasets_map = {
     'endoscopy_B': endoscopy_B,
     'endoscopy_C': endoscopy_C,
     'endoscopy_D': endoscopy_D,
-    'endoscopy_E': endoscopy_E
+    'endoscopy_E': endoscopy_E,
+    'endoscopy_A_equal': endoscopy_A,
+    'endoscopy_E_equal': endoscopy_E,
 }
 
 

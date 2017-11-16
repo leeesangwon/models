@@ -29,10 +29,12 @@ slim = tf.contrib.slim
 
 _NUM_OF_CLASSES = {
     'endoscopy_A': 2,
+    'endoscopy_A_equal': 2,
     'endoscopy_B': 3,
     'endoscopy_C': 4,
     'endoscopy_D': 5,
     'endoscopy_E': 3,
+    'endoscopy_E_equal': 3,
 }
 
 tf.app.flags.DEFINE_integer(
