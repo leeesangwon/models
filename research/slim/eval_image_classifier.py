@@ -183,6 +183,10 @@ def main(_):
     bool_labels = tf.cast(labels, dtype=tf.bool)
     bin_labels = tf.cast(bool_labels, dtype=tf.int64)
     metrics_dict['Accuracy_binary'] = slim.metrics.streaming_accuracy(bin_predictions, bin_labels)
+
+    for i in range(2):
+        weights = tf.cast(tf.equal(bin_labels, tf.constant(i, dtype=bin_labels.dtype, shape=bin_labels.get_shape())), dtype=tf.int64)
+        metrics_dict['Accuracy_bin_'+str(i)] = slim.metrics.streaming_accuracy(bin_predictions, bin_labels, weights)
     
     names_to_values, names_to_updates = slim.metrics.aggregate_metric_map(metrics_dict)
 
