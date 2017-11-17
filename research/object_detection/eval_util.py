@@ -392,9 +392,8 @@ def repeated_checkpoint_run(tensor_dict,
   return metrics
 
 def listed_checkpoint_run(tensor_dict,
-                            update_op,
                             summary_dir,
-                            aggregated_result_processor=None,
+                            evaluators,
                             batch_processor=None,
                             checkpoint_dirs=None,
                             variables_to_restore=None,
@@ -404,9 +403,7 @@ def listed_checkpoint_run(tensor_dict,
                             max_number_of_evaluations=None,
                             master='',
                             save_graph=False,
-                            save_graph_dir='',
-                            metric_names_to_values=None,
-                            keys_to_exclude_from_results=()):
+                            save_graph_dir=''):
   if max_number_of_evaluations and max_number_of_evaluations <= 0:
     raise ValueError(
         '`number_of_steps` must be either None or a positive number.')
@@ -421,19 +418,21 @@ def listed_checkpoint_run(tensor_dict,
 
   for model_path in ckpt.all_model_checkpoint_paths:
     start = time.time()
-    logging.info('Starting evaluation at ' + time.strftime('%Y-%m-%d-%H:%M:%S',
-                                                           time.gmtime()))
+    logging.info('Starting evaluation at ' + time.strftime(
+        '%Y-%m-%d-%H:%M:%S', time.gmtime()))
     if not model_path:
       logging.info('No model found in %s. Will try again in %d seconds',
                    checkpoint_dirs[0], eval_interval_secs)
     def _restore_listed_checkpoint(sess):
       saver.restore(sess, model_path)
-    run_checkpoint_once(tensor_dict, update_op, summary_dir,
-                        aggregated_result_processor,
-                        batch_processor, checkpoint_dirs,
-                        variables_to_restore, _restore_listed_checkpoint, num_batches, master,
-                        save_graph, save_graph_dir, metric_names_to_values,
-                        keys_to_exclude_from_results)
+    global_step, metrics = _run_checkpoint_once(tensor_dict, evaluators,
+                        batch_processor,
+                        checkpoint_dirs,
+                        variables_to_restore,
+                        _restore_listed_checkpoint, num_batches,
+                        master, save_graph,
+                        save_graph_dir)
+    write_metrics(metrics, global_step, summary_dir)
     number_of_evaluations += 1
 
     if (max_number_of_evaluations and
@@ -443,6 +442,7 @@ def listed_checkpoint_run(tensor_dict,
     time_to_next_eval = start + eval_interval_secs - time.time()
     if time_to_next_eval > 0:
       time.sleep(time_to_next_eval)
+      
   return metrics
 
 
