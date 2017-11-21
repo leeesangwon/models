@@ -95,4 +95,4 @@ ENV/
 *pb2.py
 
 # vscode
-*.vscode/*
+.vscode/
