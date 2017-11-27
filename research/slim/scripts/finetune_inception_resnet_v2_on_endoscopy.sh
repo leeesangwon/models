@@ -14,22 +14,23 @@ export START_DATE=$(date '+%F')
 export PRETRAINED_CHECKPOINT_DIR=${PROJECTS_DIR}/PretrainedModel
 
 # inception resnet v2
-export MODEL_NAME=inception_resnet_v2
-export PREPROCESSING_NAME=inception_resnet_v2_notcrop
-export EXCLUDE_SCOPES=InceptionResnetV2/Logits,InceptionResnetV2/AuxLogits
-export TRAINABLE_SCOPES=InceptionResnetV2/Logits,InceptionResnetV2/AuxLogits
+export MODEL_NAME='inception_resnet_v2'
+export PREPROCESSING_NAME='inception_resnet_v2_notcrop'
+export EXCLUDE_SCOPES='InceptionResnetV2/Logits,InceptionResnetV2/AuxLogits'
+export TRAINABLE_SCOPES='InceptionResnetV2/Logits,InceptionResnetV2/AuxLogits'
 
 # About dataset
 export DATA_SUBNAMES=(A E)
 export DATA_CROSS_VAL=(0 1 2 3 4)
-export FOLDER_NAME=${START_DATE}_fulltrain
+export FOLDER_NAME=2017-11-21_20:35:59
 # FOLDER_NAME=2017-11-19_19:16:57s
 
 # About training
 export TRAIN_BATCH_SIZE=32
 export EVAL_BATCH_SIZE=2
-export MAX_NUMBER_OF_STEPS=15000
+export MAX_NUMBER_OF_STEPS=30000
 export EVALUATE_INTERVAL=500
+export START_STEP=15000
 
 for ((i=0; i<${#DATA_SUBNAMES[*]}; i++))
 do
@@ -43,7 +44,7 @@ do
         TRAIN_DIR=${PROJECTS_DIR}/TRAIN/CLASSIFICATION/${DATASET_NAME}-models/${MODEL_NAME}_${PREPROCESSING_NAME}/${FOLDER_NAME}/${DATA_CROSS_VAL[${k}]}
         EVAL_DIR=${TRAIN_DIR}/eval
 
-        for ((j=EVALUATE_INTERVAL; j<=MAX_NUMBER_OF_STEPS; j+=EVALUATE_INTERVAL))
+        for ((j=START_STEP+EVALUATE_INTERVAL; j<=MAX_NUMBER_OF_STEPS; j+=EVALUATE_INTERVAL))
         do
             # Fine-tune
             python train_image_classifier.py \
@@ -65,7 +66,7 @@ do
                 --learning_rate_decay_type=fixed \
                 --optimizer=rmsprop \
                 --weight_decay=0.00004 \
-                # --trainable_scopes=${TRAINABLE_SCOPES} \
+                --trainable_scopes=${TRAINABLE_SCOPES}
 
             # Run evaluation.
             python eval_image_classifier.py \

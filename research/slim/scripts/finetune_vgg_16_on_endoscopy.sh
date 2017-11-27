@@ -14,22 +14,23 @@ export START_DATE=$(date '+%F')
 export PRETRAINED_CHECKPOINT_DIR=${PROJECTS_DIR}/PretrainedModel
 
 # vgg16
-export MODEL_NAME=vgg_16
-export PREPROCESSING_NAME=vgg_16
-export EXCLUDE_SCOPES=vgg_16/fc8
-export TRAINABLE_SCOPES=vgg_16/fc8, vgg_16/fc7, vgg_16/fc6
+export MODEL_NAME='vgg_16'
+export PREPROCESSING_NAME='vgg_16'
+export EXCLUDE_SCOPES='vgg_16/fc8'
+export TRAINABLE_SCOPES='vgg_16/fc8, vgg_16/fc7, vgg_16/fc6'
 
 # About dataset
 export DATA_SUBNAMES=(A E)
 export DATA_CROSS_VAL=(0 1 2 3 4)
-export FOLDER_NAME=${START_DATE}_lastlayer
-# FOLDER_NAME=2017-11-19_19:16:57
+export FOLDER_NAME=2017-11-21_20:35:59
+FOLDER_NAME=${START_DATE}_lastlayer
 
 # About training
 export TRAIN_BATCH_SIZE=32
 export EVAL_BATCH_SIZE=2
-export MAX_NUMBER_OF_STEPS=15000
+export MAX_NUMBER_OF_STEPS=30000
 export EVALUATE_INTERVAL=500
+export START_STEP=0
 
 for ((i=0; i<${#DATA_SUBNAMES[*]}; i++))
 do
@@ -43,7 +44,7 @@ do
         TRAIN_DIR=${PROJECTS_DIR}/TRAIN/CLASSIFICATION/${DATASET_NAME}-models/${MODEL_NAME}_${PREPROCESSING_NAME}/${FOLDER_NAME}/${DATA_CROSS_VAL[${k}]}
         EVAL_DIR=${TRAIN_DIR}/eval
 
-        for ((j=EVALUATE_INTERVAL; j<=MAX_NUMBER_OF_STEPS; j+=EVALUATE_INTERVAL))
+        for ((j=START_STEP+EVALUATE_INTERVAL; j<=MAX_NUMBER_OF_STEPS; j+=EVALUATE_INTERVAL))
         do
             # Fine-tune
             python train_image_classifier.py \
@@ -56,7 +57,6 @@ do
                 --preprocessing_name=${PREPROCESSING_NAME} \
                 --checkpoint_path=${PRETRAINED_CHECKPOINT_DIR}/${MODEL_NAME}*.ckpt \
                 --checkpoint_exclude_scopes=${EXCLUDE_SCOPES} \
-                --trainable_scopes=${TRAINABLE_SCOPES} \
                 --max_number_of_steps=${j} \
                 --batch_size=${TRAIN_BATCH_SIZE} \
                 --save_interval_secs=600 \
@@ -65,7 +65,8 @@ do
                 --learning_rate=0.0001 \
                 --learning_rate_decay_type=fixed \
                 --optimizer=rmsprop \
-                --weight_decay=0.00004
+                --weight_decay=0.00004 \
+                --trainable_scopes=${TRAINABLE_SCOPES}
 
             # Run evaluation.
             python eval_image_classifier.py \
