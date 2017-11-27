@@ -225,7 +225,7 @@ class ObjectDetectionEvaluator(DetectionEvaluator):
       2. per_category_ap: category specific results with keys of the form
         'PerformanceByCategory/mAP@<matching_iou_threshold>IOU/category'.
     """
-    (per_class_ap, mean_ap, _, _, per_class_corloc, mean_corloc) = (
+    (per_class_ap, mean_ap, _, _, per_class_corloc, mean_corloc, _, _) = (
         self._evaluation.evaluate())
     pascal_metrics = {
         self._metric_prefix +
@@ -378,7 +378,7 @@ class OpenImagesDetectionEvaluator(ObjectDetectionEvaluator):
 ObjectDetectionEvalMetrics = collections.namedtuple(
     'ObjectDetectionEvalMetrics', [
         'average_precisions', 'mean_ap', 'precisions', 'recalls', 'corlocs',
-        'mean_corloc'
+        'mean_corloc', 'accuracy', 'accuracy_per_class'
     ])
 
 
@@ -416,6 +416,7 @@ class ObjectDetectionEvaluation(object):
     self.corloc_per_class = np.ones(self.num_class, dtype=float)
 
     self.use_weighted_mean_ap = use_weighted_mean_ap
+    self.classification_per_class = [[] for _ in range(self.num_class)]
 
   def clear_detections(self):
     self.detection_keys = {}
@@ -523,6 +524,11 @@ class ObjectDetectionEvaluation(object):
             groundtruth_boxes, groundtruth_class_labels,
             groundtruth_is_difficult_list, groundtruth_is_group_of_list))
 
+    ######### detecification #########
+    gt_class = ground_class_labels[0]
+    pred_class = detected_class_labels[detected_scores==max(detected_scores)]
+    self.classification_per_class[gt_class].append(bool(gt_class == pred_class))
+
     for i in range(self.num_class):
       if scores[i].shape[0] > 0:
         self.scores_per_class[i].append(scores[i])
@@ -569,6 +575,9 @@ class ObjectDetectionEvaluation(object):
         recalls: List of recalls, each recall is a float numpy array
         corloc: numpy float array
         mean_corloc: Mean CorLoc score for each class, float scalar
+        accuracy: classification accuracy, float scalar
+        accuracy_per_class: numpy float array of classification accuracy 
+            per class
     """
     if (self.num_gt_instances_per_class == 0).any():
       logging.warn(
@@ -611,6 +620,73 @@ class ObjectDetectionEvaluation(object):
     else:
       mean_ap = np.nanmean(self.average_precision_per_class)
     mean_corloc = np.nanmean(self.corloc_per_class)
+
+    accuracy_per_class = []
+    whole_hit = 0
+    whole_total = 0
+    for idx, classification in enumerate(self.classification_per_class):
+      hit = np.sum(classification)
+      total = len(classification)
+      accuracy_per_class.append(hit/total)
+      whole_hit += hit
+      whole_total += total
+    accuracy = whole_hit/whole_total
+    accuracy_per_class = np.array(accuracy_per_class)
+
     return ObjectDetectionEvalMetrics(
         self.average_precision_per_class, mean_ap, self.precisions_per_class,
-        self.recalls_per_class, self.corloc_per_class, mean_corloc)
+        self.recalls_per_class, self.corloc_per_class, mean_corloc, accuracy, accuracy_per_class)
+
+
+class DetecificationEvaluator(ObjectDetectionEvaluator):
+  """A class to evaluate classification using detecification metrics."""
+
+  def __init__(self, categories, matching_iou_threshold=0.5):
+    super(DetecificationEvaluator, self).__init__(
+        categories,
+        matching_iou_threshold=matching_iou_threshold,
+        evaluate_corlocs=False,
+        metric_prefix='Detecification',
+        use_weighted_mean_ap=False)
+  
+  def evaluate(self):
+    """Compute evaluation result.
+
+    Returns:
+      A dictionary of metrics with the following fields -
+
+      1. summary_metrics:
+        'Precision/mAP@<matching_iou_threshold>IOU': mean average precision at
+        the specified IOU threshold.
+
+      2. per_category_ap: category specific results with keys of the form
+        'PerformanceByCategory/mAP@<matching_iou_threshold>IOU/category'.
+    """
+    (per_class_ap, mean_ap, _, _, _, _, accuracy, accuracy_per_class) = (
+        self._evaluation.evaluate())
+    detecification_metrics = {
+        self._metric_prefix +
+        'Precision/mAP@{}IOU'.format(self._matching_iou_threshold):
+            mean_ap
+    }
+    category_index = label_map_util.create_category_index(self._categories)
+    for idx in range(per_class_ap.size):
+      if idx + self._label_id_offset in category_index:
+        display_name = (
+            self._metric_prefix + 'PerformanceByCategory/AP@{}IOU/{}'.format(
+                self._matching_iou_threshold,
+                category_index[idx + self._label_id_offset]['name']))
+        detecification_metrics[display_name] = per_class_ap[idx]
+
+    detecification_metrics = {
+        self._metric_prefix + 'Accuracy':
+            accuracy
+    }
+    for idx in range(per_class_ap.size):
+      if idx + self._label_id_offset in category_index:
+        display_name = (
+            self._metric_prefix + 'AccuracyByCategory/{}'.format(
+                category_index[idx + self._label_id_offset]['name']))
+        detecification_metrics[display_name] = accuracy_per_class[idx]
+
+    return detecification_metrics
