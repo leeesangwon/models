@@ -525,7 +525,7 @@ class ObjectDetectionEvaluation(object):
             groundtruth_is_difficult_list, groundtruth_is_group_of_list))
 
     ######### detecification #########
-    gt_class = ground_class_labels[0]
+    gt_class = self.groundtruth_class_labels[image_key][0]
     pred_class = detected_class_labels[detected_scores==max(detected_scores)]
     self.classification_per_class[gt_class].append(bool(gt_class == pred_class))
 
