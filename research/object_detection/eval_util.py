@@ -28,6 +28,8 @@ from object_detection.utils import label_map_util
 from object_detection.utils import ops
 from object_detection.utils import visualization_utils as vis_utils
 
+# from tensorflow.python import debug as tf_debug
+
 slim = tf.contrib.slim
 
 
@@ -245,9 +247,13 @@ def _run_checkpoint_once(tensor_dict,
     tf.train.write_graph(sess.graph_def, save_graph_dir, 'eval.pbtxt')
 
   counters = {'skipped': 0, 'success': 0}
+  output_txt_path = '/home/sangwon/Projects/Medical/TRAIN/DETECTION/rfcn_resnet101/data_1127_7731/A/result.txt'
+  with tf.gfile.Open(output_txt_path, 'w') as fid:
+    print('filename\tgt_class\tdt_class\tdt_score', file=fid)
   with tf.contrib.slim.queues.QueueRunners(sess):
     try:
       for batch in range(int(num_batches)):
+        # sess = tf_debug.LocalCLIDebugWrapperSession(sess)
         if (batch + 1) % 100 == 0:
           logging.info('Running eval ops batch %d/%d', batch + 1, num_batches)
         if not batch_processor:
@@ -260,6 +266,25 @@ def _run_checkpoint_once(tensor_dict,
             result_dict = {}
         else:
           result_dict = batch_processor(tensor_dict, sess, batch, counters)
+        
+        def to_str(bytes_or_str):
+          if isinstance(bytes_or_str, bytes):
+            value = bytes_or_str.decode('utf-8')
+          else:
+            value = bytes_or_str
+          return value
+
+        filename = result_dict['key']
+        gt_class = result_dict['groundtruth_classes']
+        dt_scores = result_dict['detection_scores']
+        dt_score = dt_scores.max()
+        dt_classes = result_dict['detection_classes']
+        dt_class = dt_classes[(dt_scores == dt_score)]
+        result_list = [gt_class.tolist()[0], dt_class.tolist()[0], dt_score]
+        result_str = to_str(filename) + '\t' + '\t'.join([str(x) for x in result_list])
+        with tf.gfile.Open(output_txt_path, 'a') as fid:
+          print(result_str, file=fid)
+
         for evaluator in evaluators:
           # TODO: Use image_id tensor once we fix the input data
           # decoders to return correct image_id.
