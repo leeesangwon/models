@@ -531,7 +531,11 @@ class ObjectDetectionEvaluation(object):
       self.classification_per_class[gt_class].append(False)
     else:
       pred_class = detected_class_labels[detected_scores==max(detected_scores)]
-      self.classification_per_class[gt_class].append(bool(gt_class == pred_class))
+      if max(detected_scores) < 0.5:
+        is_correct = False
+      else:
+        is_correct = bool(gt_class == pred_class)
+      self.classification_per_class[gt_class].append(is_correct)
 
     for i in range(self.num_class):
       if scores[i].shape[0] > 0:
