@@ -189,7 +189,7 @@ def evaluate(create_input_dict_fn, create_model_fn, eval_config, categories,
     variable_averages = tf.train.ExponentialMovingAverage(0.0)
     variables_to_restore = variable_averages.variables_to_restore()
 
-  metrics = eval_util.repeated_checkpoint_run(
+  metrics = eval_util.listed_checkpoint_run(
       tensor_dict=tensor_dict,
       summary_dir=eval_dir,
       evaluators=get_evaluators(eval_config, categories),
@@ -198,9 +198,9 @@ def evaluate(create_input_dict_fn, create_model_fn, eval_config, categories,
       variables_to_restore=None,
       restore_fn=None,
       num_batches=eval_config.num_examples,
-      eval_interval_secs=eval_config.eval_interval_secs,
       master=eval_config.eval_master,
       save_graph=eval_config.save_graph,
-      save_graph_dir=(eval_dir if eval_config.save_graph else ''))
+      save_graph_dir=(eval_dir if eval_config.save_graph else ''),
+      eval_interval_secs=10)
 
   return metrics

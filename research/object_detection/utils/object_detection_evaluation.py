@@ -530,11 +530,8 @@ class ObjectDetectionEvaluation(object):
     if len(detected_scores) == 0:
       self.classification_per_class[gt_class].append(False)
     else:
-      pred_class = detected_class_labels[detected_scores==max(detected_scores)]
-      if max(detected_scores) < 0.5:
-        is_correct = False
-      else:
-        is_correct = bool(gt_class == pred_class)
+      pred_class = detected_class_labels[detected_scores==max(detected_scores)][0]
+      is_correct = bool(gt_class == pred_class)
       self.classification_per_class[gt_class].append(is_correct)
 
     for i in range(self.num_class):
@@ -720,3 +717,13 @@ class DetecificationEvaluator(ObjectDetectionEvaluator):
         detecification_metrics[display_name] = accuracy_per_class[idx]
 
     return detecification_metrics
+
+
+  def clear(self):
+    """Clears the state to prepare for a fresh evaluation."""
+    self._evaluation = ObjectDetectionEvaluation(
+        self._num_classes,
+        matching_iou_threshold=self._matching_iou_threshold,
+        use_weighted_mean_ap=self._use_weighted_mean_ap,
+        label_id_offset=self._label_id_offset)
+    self._image_ids.clear()

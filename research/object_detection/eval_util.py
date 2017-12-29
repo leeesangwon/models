@@ -179,7 +179,8 @@ def _run_checkpoint_once(tensor_dict,
                          num_batches=1,
                          master='',
                          save_graph=False,
-                         save_graph_dir=''):
+                         save_graph_dir='', 
+                         *, model_path=None):
   """Evaluates metrics defined in evaluators.
 
   This function loads the latest checkpoint in checkpoint_dirs and evaluates
@@ -239,7 +240,10 @@ def _run_checkpoint_once(tensor_dict,
   else:
     if not checkpoint_dirs:
       raise ValueError('`checkpoint_dirs` must have at least one entry.')
-    checkpoint_file = tf.train.latest_checkpoint(checkpoint_dirs[0])
+    if model_path is None:
+      checkpoint_file = tf.train.latest_checkpoint(checkpoint_dirs[0])
+    else:
+      checkpoint_file = model_path
     saver = tf.train.Saver(variables_to_restore)
     saver.restore(sess, checkpoint_file)
 
@@ -247,7 +251,7 @@ def _run_checkpoint_once(tensor_dict,
     tf.train.write_graph(sess.graph_def, save_graph_dir, 'eval.pbtxt')
 
   counters = {'skipped': 0, 'success': 0}
-  output_txt_path = '/home/sangwon/Projects/Medical/TRAIN/DETECTION/rfcn_resnet101/data_1127_7731/A/result.txt'
+  output_txt_path = '/home/sangwon/Projects/Medical/TRAIN/DETECTION/tmp/result.txt'
   with tf.gfile.Open(output_txt_path, 'w') as fid:
     print('filename\tgt_class\tdt_class\tdt_score', file=fid)
   with tf.contrib.slim.queues.QueueRunners(sess):
@@ -424,7 +428,7 @@ def listed_checkpoint_run(tensor_dict,
                             variables_to_restore=None,
                             restore_fn=None,
                             num_batches=1,
-                            eval_interval_secs=120,
+                            eval_interval_secs=10,
                             max_number_of_evaluations=None,
                             master='',
                             save_graph=False,
@@ -439,7 +443,7 @@ def listed_checkpoint_run(tensor_dict,
   last_evaluated_model_path = None
   number_of_evaluations = 0
   ckpt = tf.train.get_checkpoint_state(checkpoint_dirs[0])
-  saver = tf.train.Saver(variables_to_restore)
+  # saver = tf.train.Saver(variables_to_restore)
 
   for model_path in ckpt.all_model_checkpoint_paths:
     start = time.time()
@@ -448,15 +452,15 @@ def listed_checkpoint_run(tensor_dict,
     if not model_path:
       logging.info('No model found in %s. Will try again in %d seconds',
                    checkpoint_dirs[0], eval_interval_secs)
-    def _restore_listed_checkpoint(sess):
-      saver.restore(sess, model_path)
+
     global_step, metrics = _run_checkpoint_once(tensor_dict, evaluators,
                         batch_processor,
                         checkpoint_dirs,
                         variables_to_restore,
-                        _restore_listed_checkpoint, num_batches,
+                        restore_fn, num_batches,
                         master, save_graph,
-                        save_graph_dir)
+                        save_graph_dir,
+                        model_path=model_path)
     write_metrics(metrics, global_step, summary_dir)
     number_of_evaluations += 1
 
