@@ -31,6 +31,7 @@ import math
 import os
 import random
 import sys
+import re
 
 import tensorflow as tf
 
@@ -101,12 +102,14 @@ def _get_filenames_and_classes(dataset_dir):
 
 
 def _get_dataset_filename(dataset_dir, cross_val_num, split_name, shard_id):
+  re_dataset_type = re.compile('data_[ABCDE]')
+  dataset_type = re_dataset_type.findall(dataset_dir)[-1].split('_')[-1]
   output_filename = 'cls_data_%s_%d_%s_%05d-of-%05d.tfrecord' % (
-      os.path.basename(dataset_dir).split('_')[-1], cross_val_num, split_name, shard_id, _NUM_SHARDS)
+      dataset_type, cross_val_num, split_name, shard_id, _NUM_SHARDS)
   return os.path.join(dataset_dir, output_filename)
 
 
-def _convert_dataset(split_name, filenames, class_names_to_ids, dataset_dir, cross_val_num):
+def _convert_dataset(split_name, filenames, class_names_to_ids, dataset_dir, cross_val_num=0):
   """Converts the given filenames to a TFRecord dataset.
 
   Args:
@@ -116,7 +119,7 @@ def _convert_dataset(split_name, filenames, class_names_to_ids, dataset_dir, cro
       (integers).
     dataset_dir: The directory where the converted datasets are stored.
   """
-  assert split_name in ['train', 'validation']
+  assert split_name in ['train', 'validation', 'test']
 
   num_per_shard = int(math.ceil(len(filenames) / float(_NUM_SHARDS)))
 
@@ -138,13 +141,14 @@ def _convert_dataset(split_name, filenames, class_names_to_ids, dataset_dir, cro
 
             # Read the filename:
             image_data = tf.gfile.FastGFile(filenames[i], 'rb').read()
+            image_name = os.path.split(filenames[i])[-1]
             height, width = image_reader.read_image_dims(sess, image_data)
 
             class_name = os.path.basename(os.path.dirname(filenames[i]))
             class_id = class_names_to_ids[class_name]
 
             example = dataset_utils.image_to_tfexample(
-                image_data, b'jpg', height, width, class_id)
+                image_data, b'jpg', height, width, class_id, image_name)
             tfrecord_writer.write(example.SerializeToString())
 
   sys.stdout.write('\n')
@@ -166,14 +170,25 @@ def _clean_up_temporary_files(dataset_dir):
 
 
 def _dataset_exists(dataset_dir):
-  for cross_val_num in range(_NUM_CROSS_VAL):
-    for split_name in ['train', 'validation']:
-      for shard_id in range(_NUM_SHARDS):
-        output_filename = _get_dataset_filename(
-            dataset_dir, cross_val_num, split_name, shard_id)
-        if not tf.gfile.Exists(output_filename):
-          return False
-  return True
+  re_test = re.compile('test')
+  data_for_test = re_test.search(dataset_dir)
+  if data_for_test:
+    for shard_id in range(_NUM_SHARDS):
+      output_filename = _get_dataset_filename(
+        dataset_dir, 0, 'test', shard_id)
+      if not tf.gfile.Exists(output_filename):
+        return False
+    return True
+  # data for trainval
+  else:
+    for cross_val_num in range(_NUM_CROSS_VAL):
+      for split_name in ['train', 'validation']:
+        for shard_id in range(_NUM_SHARDS):
+          output_filename = _get_dataset_filename(
+              dataset_dir, cross_val_num, split_name, shard_id)
+          if not tf.gfile.Exists(output_filename):
+            return False
+    return True
 
 
 def run(dataset_dir):
@@ -184,7 +199,7 @@ def run(dataset_dir):
   """
   if not tf.gfile.Exists(dataset_dir):
     tf.gfile.MakeDirs(dataset_dir)
-
+  
   if _dataset_exists(dataset_dir):
     print('Dataset files already exist. Exiting without re-creating them.')
     return
@@ -193,36 +208,41 @@ def run(dataset_dir):
   photo_filenames, class_names = _get_filenames_and_classes(dataset_dir)
   class_names_to_ids = dict(zip(class_names, range(len(class_names))))
 
-  # Divide into train and test:
-  random.seed(_RANDOM_SEED)
-  random.shuffle(photo_filenames)
-  training_filenames = []
-  validation_filenames = []
-  for i in range(_NUM_CROSS_VAL):
-    training_filenames.append([])
-    validation_filenames.append([])
-  for class_name in class_names:
-    target_filenames = [photo for photo in photo_filenames \
-                        if os.path.basename(os.path.dirname(photo)) == class_name]
-    num_validation = round(len(target_filenames)*_VALIDATION_RATIO)
-    validation_filenames[0] += target_filenames[0*num_validation:1*num_validation]
-    validation_filenames[1] += target_filenames[1*num_validation:2*num_validation]
-    validation_filenames[2] += target_filenames[2*num_validation:3*num_validation]
-    validation_filenames[3] += target_filenames[3*num_validation:4*num_validation]
-    validation_filenames[4] += target_filenames[4*num_validation:5*num_validation]
-  for i in range(_NUM_CROSS_VAL):
-    training_filenames[i] = [x for x in photo_filenames if x not in validation_filenames[i]]
-  
-  for i in range(_NUM_CROSS_VAL):
-    random.shuffle(training_filenames[i])
-    random.shuffle(validation_filenames[i])
+  re_test = re.compile('test')
+  data_for_test = re_test.search(dataset_dir)
+  if data_for_test:
+    _convert_dataset('test', photo_filenames, class_names_to_ids, dataset_dir)
+  else:
+    # Divide into train and validation:
+    random.seed(_RANDOM_SEED)
+    random.shuffle(photo_filenames)
+    training_filenames = []
+    validation_filenames = []
+    for i in range(_NUM_CROSS_VAL):
+      training_filenames.append([])
+      validation_filenames.append([])
+    for class_name in class_names:
+      target_filenames = [photo for photo in photo_filenames \
+                          if os.path.basename(os.path.dirname(photo)) == class_name]
+      num_validation = round(len(target_filenames)*_VALIDATION_RATIO)
+      validation_filenames[0] += target_filenames[0*num_validation:1*num_validation]
+      validation_filenames[1] += target_filenames[1*num_validation:2*num_validation]
+      validation_filenames[2] += target_filenames[2*num_validation:3*num_validation]
+      validation_filenames[3] += target_filenames[3*num_validation:4*num_validation]
+      validation_filenames[4] += target_filenames[4*num_validation:5*num_validation]
+    for i in range(_NUM_CROSS_VAL):
+      training_filenames[i] = [x for x in photo_filenames if x not in validation_filenames[i]]
+    
+    for i in range(_NUM_CROSS_VAL):
+      random.shuffle(training_filenames[i])
+      random.shuffle(validation_filenames[i])
 
-  # First, convert the training and validation sets.
-  for cross_val_num in range(_NUM_CROSS_VAL):
-    _convert_dataset('train', training_filenames[cross_val_num], class_names_to_ids,
-                    dataset_dir, cross_val_num)
-    _convert_dataset('validation', validation_filenames[cross_val_num], class_names_to_ids,
-                    dataset_dir, cross_val_num)
+    # First, convert the training and validation sets.
+    for cross_val_num in range(_NUM_CROSS_VAL):
+      _convert_dataset('train', training_filenames[cross_val_num], class_names_to_ids,
+                      dataset_dir, cross_val_num)
+      _convert_dataset('validation', validation_filenames[cross_val_num], class_names_to_ids,
+                      dataset_dir, cross_val_num)
 
   # Finally, write the labels file:
   labels_to_class_names = dict(zip(range(len(class_names)), class_names))

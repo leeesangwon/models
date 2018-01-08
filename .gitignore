@@ -97,3 +97,7 @@ ENV/
 # vscode
 .vscode/
 *.code-workspace
+
+# shell scripts for training and evaluation
+eval_schedule.sh
+train_schedule.
