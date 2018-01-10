@@ -25,6 +25,8 @@ from deployment import model_deploy
 from nets import nets_factory
 from preprocessing import preprocessing_factory
 
+import self_paced_loss
+
 slim = tf.contrib.slim
 
 tf.app.flags.DEFINE_string(
@@ -458,17 +460,18 @@ def main(_):
       """Allows data parallelism by creating multiple clones of network_fn."""
       images, labels = batch_queue.dequeue()
       logits, end_points = network_fn(images)
+      miscls_cost = self_paced_loss.configure_misclassification_cost(global_step)
 
       #############################
       # Specify the loss function #
       #############################
       if 'AuxLogits' in end_points:
-        slim.losses.softmax_cross_entropy(
-            end_points['AuxLogits'], labels,
+        self_paced_loss.mean_squared_error_with_self_paced(
+            end_points['AuxLogits'], labels, miscls_cost,
             label_smoothing=FLAGS.label_smoothing, weights=0.4,
             scope='aux_loss')
-      slim.losses.softmax_cross_entropy(
-          logits, labels, label_smoothing=FLAGS.label_smoothing, weights=1.0)
+      self_paced_loss.mean_squared_error_with_self_paced(
+          logits, labels, miscls_cost, label_smoothing=FLAGS.label_smoothing, weights=1.0)
       return end_points
 
     # Gather initial summaries.

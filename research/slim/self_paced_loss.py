@@ -1,8 +1,11 @@
 import tensorflow as tf
+import numpy as np
 
 def softmax_cross_entropy_with_self_paced(
     logits, onehot_labels, miscls_cost, weights=1.0, label_smoothing=0, scope=None):
-  """Creates a cross-entropy loss using tf.nn.softmax_cross_entropy_with_logits.
+  """Creates a cross-entropy loss with self-paced-learning using tf.nn.softmax_cross_entropy_with_logits.
+
+  Self-paced Learning for Imbalanced Data(https://link.springer.com/chapter/10.1007/978-3-662-49381-6_54)
 
   `weights` acts as a coefficient for the loss. If a scalar is provided,
   then the loss is simply scaled by the given value. If `weights` is a
@@ -16,6 +19,7 @@ def softmax_cross_entropy_with_self_paced(
   Args:
     logits: [batch_size, num_classes] logits outputs of the network .
     onehot_labels: [batch_size, num_classes] one-hot-encoded labels.
+    miscls_cost: [num_classes] misclassification cost for cost sensitive self-paced learning
     weights: Coefficients for the loss. The tensor must be a scalar or a tensor
       of shape [batch_size].
     label_smoothing: If greater than 0 then smooth the labels.
@@ -64,7 +68,9 @@ def softmax_cross_entropy_with_self_paced(
 
 def mean_squared_error_with_self_paced(
     logits, onehot_labels, miscls_cost, weights=1.0, label_smoothing=0, scope=None):
-  """Creates a cross-entropy loss using tf.nn.softmax_cross_entropy_with_logits.
+  """Creates a mean squared error with self-paced learning using tf.squared_difference.
+
+  Self-paced Learning for Imbalanced Data(https://link.springer.com/chapter/10.1007/978-3-662-49381-6_54)
 
   `weights` acts as a coefficient for the loss. If a scalar is provided,
   then the loss is simply scaled by the given value. If `weights` is a
@@ -78,6 +84,7 @@ def mean_squared_error_with_self_paced(
   Args:
     logits: [batch_size, num_classes] logits outputs of the network .
     onehot_labels: [batch_size, num_classes] one-hot-encoded labels.
+    miscls_cost: [num_classes] misclassification cost for cost sensitive self-paced learning
     weights: Coefficients for the loss. The tensor must be a scalar or a tensor
       of shape [batch_size].
     label_smoothing: If greater than 0 then smooth the labels.
@@ -122,3 +129,23 @@ def mean_squared_error_with_self_paced(
     losses = tf.concat([sp_losses_0, sp_losses_1], 0)
 
     return tf.losses.compute_weighted_loss(losses, weights, scope=scope)
+
+def configure_misclassification_cost(global_step, initial_cost=np.array([1, 0.01]), step_size=0.01):
+  """Configures the misclassification cost.
+
+  Args:
+    global_step: The global_step tensor.
+
+  Returns:
+    A `Tensor` representing the misclassification_cost.
+
+  Raises:
+    ValueError: if
+  """
+  if global_step is None:
+    raise ValueError("global_step is required for configure_misclassification_cost.")
+  
+  mu = (global_step//300) * step_size * 100
+  misclassification_cost = initial_cost * (1 + mu)
+
+  return tf.constant(misclassification_cost, name='misclassification_cost')
