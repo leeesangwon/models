@@ -555,6 +555,9 @@ def main(_):
     summaries |= set(tf.get_collection(tf.GraphKeys.SUMMARIES,
                                        first_clone_scope))
 
+    summaries |= set(tf.get_collection(tf.GraphKeys.SUMMARIES, 
+                                       "mean_squared_error_with_self_paced"))
+
     # Merge all summaries together.
     summary_op = tf.summary.merge(list(summaries), name='summary_op')
 

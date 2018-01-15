@@ -49,19 +49,7 @@ def softmax_cross_entropy_with_self_paced(
                                                   logits=logits,
                                                   name="xentropy")
 
-    mask_cls_0 = tf.cast(onehot_labels[0], tf.bool)
-    mask_cls_1 = tf.cast(onehot_labels[1], tf.bool)
-
-    losses_cls_0 = tf.boolean_mask(losses, mask_cls_0)
-    losses_cls_1 = tf.boolean_mask(losses, mask_cls_1)
-
-    mask_miscls_0 = tf.less(losses_cls_0, tf.ones_like(losses_cls_0) * miscls_cost[0])
-    mask_miscls_1 = tf.less(losses_cls_1, tf.ones_like(losses_cls_1) * miscls_cost[1])
-
-    sp_losses_0 = tf.boolean_mask(losses_cls_0, mask_miscls_0) * miscls_cost[0]
-    sp_losses_1 = tf.boolean_mask(losses_cls_1, mask_miscls_1) * miscls_cost[1]
-    
-    losses = tf.concat([sp_losses_0, sp_losses_1], 0)
+    losses = _cost_sensitive_self_paced_learning(losses, onehot_labels, miscls_cost)
 
     return tf.losses.compute_weighted_loss(losses, weights, scope=scope)
 
@@ -114,23 +102,51 @@ def mean_squared_error_with_self_paced(
     losses = tf.squared_difference(onehot_labels, softmax_logits)
     losses = tf.reduce_mean(losses, 1)
 
-    mask_cls_0 = tf.cast(onehot_labels[0], tf.bool)
-    mask_cls_1 = tf.cast(onehot_labels[1], tf.bool)
-
-    losses_cls_0 = tf.boolean_mask(losses, mask_cls_0)
-    losses_cls_1 = tf.boolean_mask(losses, mask_cls_1)
-
-    mask_miscls_0 = tf.less(losses_cls_0, tf.ones_like(losses_cls_0) * miscls_cost[0])
-    mask_miscls_1 = tf.less(losses_cls_1, tf.ones_like(losses_cls_1) * miscls_cost[1])
-
-    sp_losses_0 = tf.boolean_mask(losses_cls_0, mask_miscls_0) * miscls_cost[0]
-    sp_losses_1 = tf.boolean_mask(losses_cls_1, mask_miscls_1) * miscls_cost[1]
-    
-    losses = tf.concat([sp_losses_0, sp_losses_1], 0)
+    losses = _cost_sensitive_self_paced_learning(losses, onehot_labels, miscls_cost)
 
     return tf.losses.compute_weighted_loss(losses, weights, scope=scope)
 
-def configure_misclassification_cost(global_step, initial_cost=np.array([1, 0.01]), step_size=0.01):
+
+def _cost_sensitive_self_paced_learning(losses, onehot_labels, miscls_cost):
+  """Creates a cost sensitive self-paced learning loss.
+
+  Self-paced Learning for Imbalanced Data(https://link.springer.com/chapter/10.1007/978-3-662-49381-6_54)
+
+  Args:
+    losses: [batch_size] loss of the each example.
+    onehot_labels: [batch_size, num_classes] one-hot-encoded labels.
+    miscls_cost: [C+, C-] misclassification cost for cost sensitive self-paced learning.
+      benign:cancer = 398: 298
+  Returns:
+    A `Tensor` representing the list of the loss value of the easy example.
+
+  Raises:
+
+  """
+  mask_cls_0 = tf.cast(onehot_labels[:,0], tf.bool)
+  mask_cls_1 = tf.cast(onehot_labels[:,1], tf.bool)
+
+  losses_cls_0 = tf.boolean_mask(losses, mask_cls_0)
+  losses_cls_1 = tf.boolean_mask(losses, mask_cls_1)
+  with tf.device('/cpu:0'):
+    tf.summary.scalar('selfpaced/number_of_benign', tf.size(losses_cls_0))
+    tf.summary.scalar('selfpaced/number_of_cancer', tf.size(losses_cls_1))
+
+  mask_miscls_0 = tf.less(losses_cls_0, tf.ones_like(losses_cls_0) * miscls_cost[1])
+  mask_miscls_1 = tf.less(losses_cls_1, tf.ones_like(losses_cls_1) * miscls_cost[0])
+
+  sp_losses_0 = tf.boolean_mask(losses_cls_0, mask_miscls_0) * miscls_cost[1]
+  sp_losses_1 = tf.boolean_mask(losses_cls_1, mask_miscls_1) * miscls_cost[0]
+  with tf.device('/cpu:0'):
+    tf.summary.scalar('selfpaced/rate_of_easy_benign', 
+                      _safe_div(tf.size(sp_losses_0), tf.size(losses_cls_0)))
+    tf.summary.scalar('selfpaced/rate_of_easy_cancer', 
+                      _safe_div(tf.size(sp_losses_1), tf.size(losses_cls_1)))
+
+  return tf.concat([sp_losses_0, sp_losses_1], 0)
+
+
+def configure_misclassification_cost(global_step, initial_cost=np.array([0.4, 0.3]), step_size=0.01, update_interval=1000):
   """Configures the misclassification cost.
 
   Args:
@@ -138,14 +154,28 @@ def configure_misclassification_cost(global_step, initial_cost=np.array([1, 0.01
 
   Returns:
     A `Tensor` representing the misclassification_cost.
+      [C+, C-], benign:cancer = 398: 298
 
   Raises:
     ValueError: if
   """
   if global_step is None:
     raise ValueError("global_step is required for configure_misclassification_cost.")
-  
-  mu = (global_step//300) * step_size * 100
-  misclassification_cost = initial_cost * (1 + mu)
 
-  return tf.constant(misclassification_cost, name='misclassification_cost')
+  initial_cost = tf.constant(initial_cost, tf.float32)
+  step_size = tf.constant(step_size, tf.float32)
+  current_step = tf.floordiv(global_step, update_interval)
+  
+  mu = tf.cast(tf.cast(current_step, step_size.dtype) * tf.divide(step_size, initial_cost[1]), tf.float32)
+  misclassification_cost = initial_cost * tf.add(tf.constant(1, mu.dtype), mu)
+
+  return misclassification_cost
+
+
+def _safe_div(x, y):
+  '''
+  if y==0 return 0 else return x/y
+  '''
+  x = tf.cast(x, tf.float32)
+  y = tf.cast(y, tf.float32)
+  return x * tf.where(tf.equal(y, 0), y, 1./y)
