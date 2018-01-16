@@ -29,8 +29,8 @@ from datasets import dataset_utils
 
 slim = tf.contrib.slim
 
-_FILE_PATTERN = 'endoscopy349_%s_*.tfrecord'
-SPLITS_TO_SIZES = {'train': 300, 'validation': 49}
+_FILE_PATTERN = 'classification_data_of_3_images_%s_224.tfrecord'
+SPLITS_TO_SIZES = {'train': 490, 'validation': 122}
 _NUM_CLASSES = 2
 
 _ITEMS_TO_DESCRIPTIONS = {
@@ -69,13 +69,13 @@ def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
 
   keys_to_features = {
       'image/encoded': tf.FixedLenFeature((), tf.string, default_value=''),
-      'image/format': tf.FixedLenFeature((), tf.string, default_value='png'),
+      'image/format': tf.FixedLenFeature((), tf.string, default_value='raw'),
       'image/class/label': tf.FixedLenFeature(
           [], tf.int64, default_value=tf.zeros([], dtype=tf.int64)),
   }
 
   items_to_handlers = {
-      'image': slim.tfexample_decoder.Image(),
+      'image': Image9ch(shape=[224, 224, 9]),
       'label': slim.tfexample_decoder.Tensor('image/class/label'),
   }
 
@@ -94,3 +94,76 @@ def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
       items_to_descriptions=_ITEMS_TO_DESCRIPTIONS,
       num_classes=_NUM_CLASSES,
       labels_to_names=labels_to_names)
+
+
+class Image9ch(slim.tfexample_decoder.ItemHandler):
+  def __init__(self,
+               image_key=None,
+               format_key=None,
+               shape=None,
+               channels=9,
+               dtype=tf.float32,
+               repeated=False):
+    """Initializes the image.
+
+    Args:
+      image_key: the name of the TF-Example feature in which the encoded image
+        is stored.
+      format_key: the name of the TF-Example feature in which the image format
+        is stored.
+      shape: the output shape of the image as 1-D `Tensor`
+        [height, width, channels]. If provided, the image is reshaped
+        accordingly. If left as None, no reshaping is done. A shape should
+        be supplied only if all the stored images have the same shape.
+      channels: the number of channels in the image.
+      dtype: images will be decoded at this bit depth. Different formats
+        support different bit depths.
+          See tf.image.decode_image,
+              tf.decode_raw,
+      repeated: if False, decodes a single image. If True, decodes a
+        variable number of image strings from a 1D tensor of strings.
+    """
+    if not image_key:
+      image_key = 'image/encoded'
+    if not format_key:
+      format_key = 'image/format'
+
+    super(Image9ch, self).__init__([image_key, format_key])
+    self._image_key = image_key
+    self._format_key = format_key
+    self._shape = shape
+    self._channels = channels
+    self._dtype = dtype
+    self._repeated = repeated
+
+  def tensors_to_item(self, keys_to_tensors):
+    """See base class."""
+    image_buffer = keys_to_tensors[self._image_key]
+    image_format = keys_to_tensors[self._format_key]
+
+    if self._repeated:
+      return tf.map_fn(lambda x: self._decode(x, image_format),
+                                   image_buffer, dtype=self._dtype)
+    else:
+      return self._decode(image_buffer, image_format)
+
+  def _decode(self, image_buffer, image_format):
+    """Decodes the image buffer.
+
+    Args:
+      image_buffer: The tensor representing the encoded image tensor.
+      image_format: The image format for the image in `image_buffer`. If image
+        format is `raw`, all images are expected to be in this format, otherwise
+        this op can decode a mix of `jpg` and `png` formats.
+
+    Returns:
+      A tensor that represents decoded image of self._shape, or
+      (?, ?, self._channels) if self._shape is not specified.
+    """
+
+    image = tf.decode_raw(image_buffer, out_type=self._dtype)
+
+    if self._shape is not None:
+      image = tf.reshape(image, self._shape)
+
+    return image

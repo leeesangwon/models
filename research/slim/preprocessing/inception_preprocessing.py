@@ -190,51 +190,14 @@ def preprocess_for_train(image, height, width, bbox,
                          shape=[1, 1, 4])
     if image.dtype != tf.float32:
       image = tf.image.convert_image_dtype(image, dtype=tf.float32)
-    # Each bounding box has shape [1, num_boxes, box coords] and
-    # the coordinates are ordered [ymin, xmin, ymax, xmax].
-    image_with_box = tf.image.draw_bounding_boxes(tf.expand_dims(image, 0),
-                                                  bbox)
-    if add_image_summaries:
-      tf.summary.image('image_with_bounding_boxes', image_with_box)
 
-    distorted_image, distorted_bbox = distorted_bounding_box_crop(image, bbox)
-    # Restore the shape since the dynamic slice based upon the bbox_size loses
-    # the third dimension.
-    distorted_image.set_shape([None, None, 3])
-    image_with_distorted_box = tf.image.draw_bounding_boxes(
-        tf.expand_dims(image, 0), distorted_bbox)
-    if add_image_summaries:
-      tf.summary.image('images_with_distorted_bounding_box',
-                       image_with_distorted_box)
-
-    # This resizing operation may distort the images because the aspect
-    # ratio is not respected. We select a resize method in a round robin
-    # fashion based on the thread number.
-    # Note that ResizeMethod contains 4 enumerated resizing methods.
-
-    # We select only 1 case for fast_mode bilinear.
-    num_resize_cases = 1 if fast_mode else 4
-    distorted_image = apply_with_random_selector(
-        distorted_image,
-        lambda x, method: tf.image.resize_images(x, [height, width], method),
-        num_cases=num_resize_cases)
-
-    if add_image_summaries:
-      tf.summary.image('cropped_resized_image',
-                       tf.expand_dims(distorted_image, 0))
+    tf.summary.image('image0', tf.expand_dims(image[:,:,0:3], 0))
+    tf.summary.image('image1', tf.expand_dims(image[:,:,3:6], 0))
+    tf.summary.image('image2', tf.expand_dims(image[:,:,6:9], 0))
 
     # Randomly flip the image horizontally.
-    distorted_image = tf.image.random_flip_left_right(distorted_image)
+    distorted_image = tf.image.random_flip_left_right(image)
 
-    # Randomly distort the colors. There are 4 ways to do it.
-    distorted_image = apply_with_random_selector(
-        distorted_image,
-        lambda x, ordering: distort_color(x, ordering, fast_mode),
-        num_cases=4)
-
-    if add_image_summaries:
-      tf.summary.image('final_distorted_image',
-                       tf.expand_dims(distorted_image, 0))
     distorted_image = tf.subtract(distorted_image, 0.5)
     distorted_image = tf.multiply(distorted_image, 2.0)
     return distorted_image

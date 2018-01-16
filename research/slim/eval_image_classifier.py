@@ -28,6 +28,7 @@ from preprocessing import preprocessing_factory
 slim = tf.contrib.slim
 
 _NUM_OF_CLASSES = {
+    'endoscopy': 2,
     'endoscopy_A': 2,
     'endoscopy_A_equal': 2,
     'endoscopy_B': 3,

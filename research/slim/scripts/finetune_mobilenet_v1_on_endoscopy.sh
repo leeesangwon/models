@@ -12,17 +12,19 @@ export START_DATE=$(date '+%F')
 
 # About base model
 export PRETRAINED_CHECKPOINT_DIR=${PROJECTS_DIR}/PretrainedModel
+# export CKPT_PATH=${PRETRAINED_CHECKPOINT_DIR}/mobilenet_v1_1.0_224.ckpt
+export CKPT_PATH=${PROJECTS_DIR}/TRAIN/CLASSIFICATION/endoscopy-models/mobilenet_v1_/2018-01-16_3_Image_jysun/model.ckpt-10488
 
 # inception resnet v2
 export MODEL_NAME='mobilenet_v1'
 # export PREPROCESSING_NAME='inception_resnet_v2_notcrop'
-export EXCLUDE_SCOPES='MobilenetV1/Logits'
-# export TRAINABLE_SCOPES='InceptionResnetV2/Logits,InceptionResnetV2/AuxLogits'
+# export EXCLUDE_SCOPES='MobilenetV1/Logits,MobilenetV1/Conv2d_0'
+# export TRAINABLE_SCOPES='MobilenetV1/Logits,MobilenetV1/Conv2d_1_1,MobilenetV1/Conv2d_1_2,MobilenetV1/Conv2d_1_3,MobilenetvV1/Conv2d_1_1x1'
 
 # About dataset
 export DATA_SUBNAMES=(A)
-export DATA_CROSS_VAL=(1 2 3 4)
-export FOLDER_NAME=${START_DATE}_crop_bbox
+export DATA_CROSS_VAL=(0)
+export FOLDER_NAME=${START_DATE}_3_Image_jysun_2nd_step
 
 # About training
 export TRAIN_BATCH_SIZE=32
@@ -35,12 +37,11 @@ for ((i=0; i<${#DATA_SUBNAMES[*]}; i++))
 do
     for ((k=0; k<${#DATA_CROSS_VAL[*]}; k++))
     do
-        DATASET_DIR=${PROJECTS_DIR}/DATA/CLASSIFICATION/crop_bbox/trainval/data_${DATA_SUBNAMES[$i]}
-        DATASET_NAME=endoscopy_${DATA_SUBNAMES[$i]}
-        DATASET_FILE_PATTERN=cls_data_${DATA_SUBNAMES[$i]}_${DATA_CROSS_VAL[${k}]}_%s_*.tfrecord
+        DATASET_DIR=${PROJECTS_DIR}/DATA/CLASSIFICATION/threeImage_0115
+        DATASET_NAME=endoscopy
 
         # About training
-        TRAIN_DIR=${PROJECTS_DIR}/TRAIN/CLASSIFICATION/${DATASET_NAME}-models/${MODEL_NAME}_${PREPROCESSING_NAME}/${FOLDER_NAME}/${DATA_CROSS_VAL[${k}]}
+        TRAIN_DIR=${PROJECTS_DIR}/TRAIN/CLASSIFICATION/${DATASET_NAME}-models/${MODEL_NAME}_${PREPROCESSING_NAME}/${FOLDER_NAME}
         EVAL_DIR=${TRAIN_DIR}/eval
 
         for ((j=START_STEP+EVALUATE_INTERVAL; j<=MAX_NUMBER_OF_STEPS; j+=EVALUATE_INTERVAL))
@@ -51,10 +52,9 @@ do
                 --dataset_name=${DATASET_NAME} \
                 --dataset_split_name=train \
                 --dataset_dir=${DATASET_DIR} \
-                --dataset_file_pattern=${DATASET_FILE_PATTERN} \
                 --model_name=${MODEL_NAME} \
                 --preprocessing_name=${PREPROCESSING_NAME} \
-                --checkpoint_path=${PRETRAINED_CHECKPOINT_DIR}/mobilenet_v1_1.0_224.ckpt \
+                --checkpoint_path=${CKPT_PATH} \
                 --checkpoint_exclude_scopes=${EXCLUDE_SCOPES} \
                 --max_number_of_steps=${j} \
                 --batch_size=${TRAIN_BATCH_SIZE} \
@@ -65,7 +65,8 @@ do
                 --learning_rate_decay_type=fixed \
                 --optimizer=rmsprop \
                 --weight_decay=0.00004 \
-                --trainable_scopes=${TRAINABLE_SCOPES}
+                --trainable_scopes=${TRAINABLE_SCOPES} \
+                --ignore_missing_vars=True
 
             # Run evaluation.
             python eval_image_classifier.py \
@@ -75,7 +76,6 @@ do
                 --dataset_name=${DATASET_NAME} \
                 --dataset_split_name=validation \
                 --dataset_dir=${DATASET_DIR} \
-                --dataset_file_pattern=${DATASET_FILE_PATTERN} \
                 --model_name=${MODEL_NAME} \
                 --preprocessing_name=${PREPROCESSING_NAME}
         done
