@@ -15,21 +15,21 @@ export PRETRAINED_CHECKPOINT_DIR=${PROJECTS_DIR}/PretrainedModel
 
 # inception resnet v2
 export MODEL_NAME='mobilenet_v1'
-# export PREPROCESSING_NAME='inception_resnet_v2_notcrop'
+export PREPROCESSING_NAME='inception_resnet_v2_notcrop'
 export EXCLUDE_SCOPES='MobilenetV1/Logits'
 # export TRAINABLE_SCOPES='InceptionResnetV2/Logits,InceptionResnetV2/AuxLogits'
 
 # About dataset
 export DATA_SUBNAMES=(A)
-export DATA_CROSS_VAL=(1 2 3 4)
-export FOLDER_NAME=${START_DATE}_crop_bbox
+export DATA_CROSS_VAL=(0)
+export FOLDER_NAME=${START_DATE}_not_crop_full_image
 
 # About training
 export TRAIN_BATCH_SIZE=32
 export EVAL_BATCH_SIZE=2
-export MAX_NUMBER_OF_STEPS=30000
+export MAX_NUMBER_OF_STEPS=50000
 export EVALUATE_INTERVAL=500
-export START_STEP=15000
+export START_STEP=0
 
 for ((i=0; i<${#DATA_SUBNAMES[*]}; i++))
 do
