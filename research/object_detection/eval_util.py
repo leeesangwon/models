@@ -251,7 +251,9 @@ def _run_checkpoint_once(tensor_dict,
     tf.train.write_graph(sess.graph_def, save_graph_dir, 'eval.pbtxt')
 
   counters = {'skipped': 0, 'success': 0}
-  output_txt_path = '/home/sangwon/Projects/Medical/TRAIN/DETECTION/tmp/result.txt'
+  _, ckpt_number = checkpoint_file.rsplit('-', 1)
+  output_txt_path = os.path.join(os.path.dirname(checkpoint_file),
+                                 'result_%s.txt' % ckpt_number)
   with tf.gfile.Open(output_txt_path, 'w') as fid:
     print('filename\tgt_class\tdt_class\tdt_score', file=fid)
   with tf.contrib.slim.queues.QueueRunners(sess):
