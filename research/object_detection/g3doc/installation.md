@@ -53,6 +53,13 @@ the tensorflow/models/research/ directory:
 protoc object_detection/protos/*.proto --python_out=.
 ```
 
+ if using windows cmd
+
+``` cmd
+REM From tensorflow/models/research
+for %v in (dir object_detection/protos/*.proto) do protoc %v --python_out=.
+```
+
 ## Add Libraries to PYTHONPATH
 
 When running locally, the tensorflow/models/research/ and slim directories
