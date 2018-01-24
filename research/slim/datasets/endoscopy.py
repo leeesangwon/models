@@ -56,11 +56,28 @@ def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
   Raises:
     ValueError: if `split_name` is not a valid train/validation split.
   """
-  if split_name not in SPLITS_TO_SIZES:
-    raise ValueError('split name %s was not recognized.' % split_name)
-
+  
   if not file_pattern:
     file_pattern = _FILE_PATTERN
+    splits_to_sizes = SPLITS_TO_SIZES
+  else:
+    if file_pattern == 'classification_data_of_3_images_0_%s_224_20180117.tfrecord':
+      splits_to_sizes = {'train': 484, 'test': 135}
+    elif file_pattern == 'classification_data_of_3_images_1_%s_224_20180117.tfrecord':
+      splits_to_sizes = {'train': 492, 'test': 127}
+    elif file_pattern == 'classification_data_of_3_images_2_%s_224_20180117.tfrecord':
+      splits_to_sizes = {'train': 483, 'test': 136}
+    elif file_pattern == 'classification_data_of_3_images_3_%s_224_20180117.tfrecord':
+      splits_to_sizes = {'train': 490, 'test': 129}
+    elif file_pattern == 'classification_data_of_3_images_4_%s_224_20180117.tfrecord':
+      splits_to_sizes = {'train': 527, 'test': 92}
+    else:
+      splits_to_sizes = SPLITS_TO_SIZES
+    
+  
+  if split_name not in splits_to_sizes:
+    raise ValueError('split name %s was not recognized.' % split_name)
+
   file_pattern = os.path.join(dataset_dir, file_pattern % split_name)
 
   # Allowing None in the signature so that dataset_factory can use the default.
@@ -90,7 +107,7 @@ def get_split(split_name, dataset_dir, file_pattern=None, reader=None):
       data_sources=file_pattern,
       reader=reader,
       decoder=decoder,
-      num_samples=SPLITS_TO_SIZES[split_name],
+      num_samples=splits_to_sizes[split_name],
       items_to_descriptions=_ITEMS_TO_DESCRIPTIONS,
       num_classes=_NUM_CLASSES,
       labels_to_names=labels_to_names)
