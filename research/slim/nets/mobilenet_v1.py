@@ -369,7 +369,8 @@ def mobilenet_v1(inputs,
           logits = tf.squeeze(logits, [1, 2], name='SpatialSqueeze')
       end_points['Logits'] = logits
       if prediction_fn:
-        end_points['Predictions'] = prediction_fn(logits, scope='Predictions')
+        with tf.device('/cpu:0'):
+          end_points['Predictions'] = prediction_fn(logits, scope='Predictions')
   return logits, end_points
 
 mobilenet_v1.default_image_size = 224
