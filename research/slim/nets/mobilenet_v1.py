@@ -133,13 +133,12 @@ _CONV_DEFS = [
     DepthSepConv(kernel=[3, 3], stride=1, depth=512),
     DepthSepConv(kernel=[3, 3], stride=1, depth=512),
     DepthSepConv(kernel=[3, 3], stride=1, depth=512),
-    DepthSepConv(kernel=[3, 3], stride=2, depth=1024),
-    DepthSepConv(kernel=[3, 3], stride=1, depth=1024)
+    DepthSepConv(kernel=[3, 3], stride=2, depth=1024)
 ] # 12, 13 = 1024 -> 512 changed # Conv(kernel=[3, 3], stride=2, depth=32),
 
 
 def mobilenet_v1_base(inputs,
-                      final_endpoint='Conv2d_13_pointwise',
+                      final_endpoint='Conv2d_12_pointwise',
                       min_depth=8,
                       depth_multiplier=1.0,
                       conv_defs=None,
@@ -356,6 +355,54 @@ def mobilenet_v1(inputs,
                                           min_depth=min_depth,
                                           depth_multiplier=depth_multiplier,
                                           conv_defs=conv_defs)
+      
+      depth = lambda d: max(int(d * depth_multiplier), min_depth)
+      conv_def = DepthSepConv(kernel=[3, 3], stride=1, depth=1024)
+      layer_stride = conv_def.stride
+      layer_rate = 1
+      end_point = 'Conv2d_13_1_depthwise'
+      # By passing filters=None
+      # separable_conv2d produces only a depthwise convolution layer
+      net1 = slim.separable_conv2d(net, None, conv_def.kernel,
+                                  depth_multiplier=1,
+                                  stride=layer_stride,
+                                  rate=layer_rate,
+                                  normalizer_fn=slim.batch_norm,
+                                  scope=end_point)
+      end_points[end_point] = net1
+      end_point = 'Conv2d_13_1_pointwise'
+      net1 = slim.conv2d(net1, depth(conv_def.depth), [1, 1],
+                        stride=1,
+                        normalizer_fn=slim.batch_norm,
+                        scope=end_point)
+      end_points[end_point] = net1
+
+      end_point = 'Conv2d_13_depthwise'
+      # By passing filters=None
+      # separable_conv2d produces only a depthwise convolution layer
+      net2 = slim.separable_conv2d(net, None, conv_def.kernel,
+                                  depth_multiplier=1,
+                                  stride=layer_stride,
+                                  rate=layer_rate,
+                                  normalizer_fn=slim.batch_norm,
+                                  scope=end_point)
+      end_points[end_point] = net2
+      end_point = 'Conv2d_13_pointwise'
+      net2 = slim.conv2d(net1, depth(conv_def.depth), [1, 1],
+                        stride=1,
+                        normalizer_fn=slim.batch_norm,
+                        scope=end_point)
+      end_points[end_point] = net2
+
+      with tf.variable_scope('Mask'):
+        end_point = 'Multiply'
+        net = tf.multiply(net1, net2)
+        end_points[end_point]  = net
+
+        end_point = 'Add'
+        net = tf.add(net, net2)
+        end_points[end_point] = net
+
       with tf.variable_scope('Logits'):
         kernel_size = _reduced_kernel_size_for_small_input(net, [7, 7])
         net = slim.avg_pool2d(net, kernel_size, padding='VALID',

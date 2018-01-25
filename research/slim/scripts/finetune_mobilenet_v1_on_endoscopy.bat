@@ -10,7 +10,7 @@
 setlocal ENABLEDELAYEDEXPANSION
 
 set PROJECTS_DIR=D:\Projects\Medical
-set START_DATE=2018-01-22
+set START_DATE=2018-01-24
 
 :: About base model
 set PRETRAINED_CHECKPOINT_DIR=%PROJECTS_DIR%\PretrainedModel
@@ -18,20 +18,20 @@ set CKPT_PATH=%PRETRAINED_CHECKPOINT_DIR%\mobilenet_v1_1.0_224.ckpt
 
 set MODEL_NAME=mobilenet_v1
 set EXCLUDE_SCOPES=MobilenetV1/Logits,MobilenetV1/Conv2d_0
-set TRAINABLE_SCOPES=MobilenetV1/Logits,MobilenetV1/Conv2d_1_1,MobilenetV1/Conv2d_1_2,MobilenetV1/Conv2d_1_3,MobilenetvV1/Conv2d_1_1x1
+set TRAINABLE_SCOPES=MobilenetV1/Logits,MobilenetV1/Conv2d_1_1,MobilenetV1/Conv2d_1_2,MobilenetV1/Conv2d_1_3,MobilenetvV1/Conv2d_1_1x1,MobilenetV1/Conv2d_13_1_depthwise,MobilenetV1/Conv2d_13_1_pointwise
 
 :: About dataset
 set DATA_CROSS_VAL=(0 1 2 3 4)
-set FOLDER_NAME=%START_DATE%_3_Image_jysun_1st_step
+set FOLDER_NAME=%START_DATE%_3_image_mask_1st_step
 
 :: About training
 set TRAIN_BATCH_SIZE=32
 set EVAL_BATCH_SIZE=2
-set MAX_NUMBER_OF_STEPS=10000
-set EVALUATE_INTERVAL=500
-set START_STEP=500
+set MAX_NUMBER_OF_STEPS=20000
+set EVALUATE_INTERVAL=1000
+set START_STEP=11000
 
-set DATASET_DIR=%PROJECTS_DIR%\DATA\CLASSIFICATION\threeImage_0117
+set DATASET_DIR=C:\Projects\Medical\DATA\CLASSIFICATION\threeImage_0117
 set DATASET_NAME=endoscopy
 
 FOR %%i IN %DATA_CROSS_VAL% do (
