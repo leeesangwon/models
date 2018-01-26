@@ -10,12 +10,12 @@
 setlocal ENABLEDELAYEDEXPANSION
 
 set PROJECTS_DIR=D:\Projects\Medical
-set START_DATE=2018-01-24
+set START_DATE=2018-01-25
 
 :: About base model
 set PRETRAINED_CHECKPOINT_DIR=%PROJECTS_DIR%\PretrainedModel
 REM set CKPT_PATH=%PRETRAINED_CHECKPOINT_DIR%\mobilenet_v1_1.0_224.ckpt
-set CKPT_PATH=%PROJECTS_DIR%\TRAIN\CLASSIFICATION\endoscopy-models\mobilenet_v1_\2018-01-23_3_image_mask_1st_step
+set CKPT_PATH=%PROJECTS_DIR%\TRAIN\CLASSIFICATION\endoscopy-models\mobilenet_v1_\2018-01-25_3_image_mask_1st_step
 
 set MODEL_NAME=mobilenet_v1
 
@@ -26,7 +26,7 @@ set FOLDER_NAME=%START_DATE%_3_image_mask_2nd_step
 :: About training
 set TRAIN_BATCH_SIZE=32
 set EVAL_BATCH_SIZE=2
-set MAX_NUMBER_OF_STEPS=10000
+set MAX_NUMBER_OF_STEPS=20000
 set EVALUATE_INTERVAL=1000
 set START_STEP=1000
 
