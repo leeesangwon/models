@@ -279,7 +279,7 @@ def _aspect_preserving_resize(image, smallest_side):
   resized_image = tf.image.resize_bilinear(image, [new_height, new_width],
                                            align_corners=False)
   resized_image = tf.squeeze(resized_image)
-  resized_image.set_shape([None, None, 3])
+  resized_image.set_shape([None, None, 9])
   return resized_image
 
 
@@ -310,10 +310,10 @@ def preprocess_for_train(image,
 
   image = _aspect_preserving_resize(image, resize_side)
   image = tf.image.resize_images(image, [output_height, output_width])
-  image.set_shape([output_height, output_width, 3])
+  image.set_shape([output_height, output_width, 9])
   image = tf.to_float(image)
   image = tf.image.random_flip_left_right(image)
-  return _mean_image_subtraction(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+  return image
 
 
 def preprocess_for_eval(image, output_height, output_width, resize_side):
@@ -330,9 +330,9 @@ def preprocess_for_eval(image, output_height, output_width, resize_side):
   """
   image = _aspect_preserving_resize(image, resize_side)
   image = _central_crop([image], output_height, output_width)[0]
-  image.set_shape([output_height, output_width, 3])
+  image.set_shape([output_height, output_width, 9])
   image = tf.to_float(image)
-  return _mean_image_subtraction(image, [_R_MEAN, _G_MEAN, _B_MEAN])
+  return image
 
 
 def preprocess_image(image, output_height, output_width, is_training=False,
