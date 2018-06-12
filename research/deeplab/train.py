@@ -25,6 +25,7 @@ from deeplab.datasets import segmentation_dataset
 from deeplab.utils import input_generator
 from deeplab.utils import train_utils
 from deployment import model_deploy
+from tensorpack.tfutils.optimizer import AccumGradOptimizer
 
 slim = tf.contrib.slim
 
@@ -100,6 +101,9 @@ flags.DEFINE_float('momentum', 0.9, 'The momentum value to use')
 # size and set fine_tune_batch_norm=False.
 flags.DEFINE_integer('train_batch_size', 8,
                      'The number of images in each batch during training.')
+
+flags.DEFINE_integer('iter_size', 1,
+                     'Accumulate gradients over `iter_size` x `batch_size` instances')
 
 flags.DEFINE_float('weight_decay', 0.00004,
                    'The value of the weight decay for training.')
@@ -323,6 +327,7 @@ def main(unused_argv):
           FLAGS.training_number_of_steps, FLAGS.learning_power,
           FLAGS.slow_start_step, FLAGS.slow_start_learning_rate)
       optimizer = tf.train.MomentumOptimizer(learning_rate, FLAGS.momentum)
+      optimizer = AccumGradOptimizer(optimizer, FLAGS.iter_size)
       summaries.add(tf.summary.scalar('learning_rate', learning_rate))
 
     startup_delay_steps = FLAGS.task * FLAGS.startup_delay_steps
