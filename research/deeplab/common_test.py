@@ -1,4 +1,4 @@
-# Copyright 2018 The TensorFlow Authors. All Rights Reserved.
+# Copyright 2018 The TensorFlow Authors All Rights Reserved.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -12,12 +12,23 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 # ==============================================================================
-"""NCF Constants."""
 
-TRAIN_RATINGS_FILENAME = 'train-ratings.csv'
-TEST_RATINGS_FILENAME = 'test-ratings.csv'
-TEST_NEG_FILENAME = 'test-negative.csv'
+"""Tests for common.py."""
 
-USER = "user_id"
-ITEM = "item_id"
-RATING = "rating"
+import tensorflow as tf
+
+from deeplab import common
+
+
+class CommonTest(tf.test.TestCase):
+
+  def testOutputsToNumClasses(self):
+    num_classes = 21
+    model_options = common.ModelOptions(
+        outputs_to_num_classes={common.OUTPUT_TYPE: num_classes})
+    self.assertEqual(model_options.outputs_to_num_classes[common.OUTPUT_TYPE],
+                     num_classes)
+
+
+if __name__ == '__main__':
+  tf.test.main()
