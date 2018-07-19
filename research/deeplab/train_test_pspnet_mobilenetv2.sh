@@ -47,10 +47,12 @@ INIT_FOLDER="${WORK_DIR}/${DATASET_DIR}/${DATASET_FOLDER}/init_models"
 TRAIN_LOGDIR="${WORK_DIR}/${DATASET_DIR}/${DATASET_FOLDER}/${EXP_FOLDER}/train"
 EVAL_LOGDIR="${WORK_DIR}/${DATASET_DIR}/${DATASET_FOLDER}/${EXP_FOLDER}/eval"
 VIS_LOGDIR="${WORK_DIR}/${DATASET_DIR}/${DATASET_FOLDER}/${EXP_FOLDER}/vis"
+SPEED_LOGDIR="${WORK_DIR}/${DATASET_DIR}/${DATASET_FOLDER}/${EXP_FOLDER}/speed"
 EXPORT_DIR="${WORK_DIR}/${DATASET_DIR}/${DATASET_FOLDER}/${EXP_FOLDER}/export"
 mkdir -p "${TRAIN_LOGDIR}"
 mkdir -p "${EVAL_LOGDIR}"
 mkdir -p "${VIS_LOGDIR}"
+mkdir -p "${SPEED_LOGDIR}"
 mkdir -p "${EXPORT_DIR}"
 
 # Copy locally the trained checkpoint as the initial checkpoint.
@@ -118,3 +120,19 @@ python "${WORK_DIR}"/vis_pspnet.py \
   --vis_logdir="${VIS_LOGDIR}" \
   --dataset_dir="${CITYSCAPES_DATASET}" \
   --max_number_of_iterations=1
+
+python "${WORK_DIR}"/speed_pspnet.py \
+  --logtostderr \
+  --speed_split="val" \
+  --model_variant="mobilenet_v2" \
+  --atrous_rates=1 \
+  --atrous_rates=2 \
+  --atrous_rates=3 \
+  --atrous_rates=6 \
+  --output_stride=8 \
+  --speed_crop_size=1025 \
+  --speed_crop_size=2049 \
+  --dataset="cityscapes" \
+  --checkpoint_dir="${TRAIN_LOGDIR}" \
+  --speed_logdir="${SPEED_LOGDIR}" \
+  --dataset_dir="${CITYSCAPES_DATASET}"
