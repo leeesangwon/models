@@ -59,9 +59,8 @@ slim = tf.contrib.slim
 LOGITS_SCOPE_NAME = 'logits'
 MERGED_LOGITS_SCOPE = 'merged_logits'
 IMAGE_POOLING_SCOPE = 'image_pooling'
-ASPP_SCOPE = 'aspp'
-CONCAT_PROJECTION_SCOPE = 'concat_projection'
-DECODER_SCOPE = 'decoder'
+PPM_SCOPE = 'ppm'
+CONCAT_PROJECTION_SCOPE = 'concat_projection' 
 
 
 def get_extra_layer_scopes(last_layers_contain_logits_only=False):
@@ -80,9 +79,8 @@ def get_extra_layer_scopes(last_layers_contain_logits_only=False):
     return [
         LOGITS_SCOPE_NAME,
         IMAGE_POOLING_SCOPE,
-        ASPP_SCOPE,
+        PPM_SCOPE,
         CONCAT_PROJECTION_SCOPE,
-        DECODER_SCOPE,
     ]
 
 
@@ -374,48 +372,37 @@ def extract_features(images,
         stride=1,
         reuse=reuse):
       with slim.arg_scope([slim.batch_norm], **batch_norm_params):
-        depth = 256
         branch_logits = []
 
-        if model_options.add_image_level_feature:
-          pool_height = scale_dimension(model_options.crop_size[0],
-                                        1. / model_options.output_stride)
-          pool_width = scale_dimension(model_options.crop_size[1],
-                                       1. / model_options.output_stride)
-          image_feature = slim.avg_pool2d(
-              features, [pool_height, pool_width], [pool_height, pool_width],
-              padding='VALID')
-          image_feature = slim.conv2d(
-              image_feature, depth, 1, scope=IMAGE_POOLING_SCOPE)
-          image_feature = tf.image.resize_bilinear(
-              image_feature, [pool_height, pool_width], align_corners=True)
-          image_feature.set_shape([None, pool_height, pool_width, depth])
-          branch_logits.append(image_feature)
-
-        # Employ a 1x1 convolution.
-        branch_logits.append(slim.conv2d(features, depth, 1,
-                                         scope=ASPP_SCOPE + str(0)))
-
+        # Pyramid pooling module
         if model_options.atrous_rates:
-          # Employ 3x3 convolutions with different atrous rates.
-          for i, rate in enumerate(model_options.atrous_rates, 1):
-            scope = ASPP_SCOPE + str(i)
-            if model_options.aspp_with_separable_conv:
-              aspp_features = split_separable_conv2d(
-                  features,
-                  filters=depth,
-                  rate=rate,
-                  weight_decay=weight_decay,
-                  scope=scope)
-            else:
-              aspp_features = slim.conv2d(
-                  features, depth, 3, rate=rate, scope=scope)
-            branch_logits.append(aspp_features)
+          depth = int(320 / len(model_options.atrous_rates)) # num of mobilenet_v2 output channel = 320
+          feature_height = scale_dimension(model_options.crop_size[0],
+                                        1. / model_options.output_stride)
+          feature_width = scale_dimension(model_options.crop_size[1],
+                                       1. / model_options.output_stride)
+          with tf.variable_scope(PPM_SCOPE):
+            for i, pool in enumerate(model_options.atrous_rates, 1):
+              with tf.variable_scope(IMAGE_POOLING_SCOPE + str(i)) as scope:
+                pool_height = feature_height / pool
+                pool_width = feature_height / pool
+                ppm_feature = slim.avg_pool2d(
+                    features, [pool_height, pool_width], [pool_height, pool_width],
+                    padding='VALID')
+                ppm_feature = slim.conv2d(
+                    ppm_feature, depth, 1, scope=scope)
+                ppm_feature = tf.image.resize_bilinear(
+                    ppm_feature, [feature_height, feature_width], align_corners=True)
+                ppm_feature.set_shape([None, feature_height, feature_width, depth])
+                branch_logits.append(ppm_feature)
+
+        # Input feature
+        branch_logits.append(features)
 
         # Merge branch logits.
         concat_logits = tf.concat(branch_logits, 3)
         concat_logits = slim.conv2d(
-            concat_logits, depth, 1, scope=CONCAT_PROJECTION_SCOPE)
+            concat_logits, depth, 3, scope=CONCAT_PROJECTION_SCOPE)
         concat_logits = slim.dropout(
             concat_logits,
             keep_prob=0.9,
@@ -452,23 +439,6 @@ def _get_logits(images,
       is_training=is_training,
       fine_tune_batch_norm=fine_tune_batch_norm)
 
-  if model_options.decoder_output_stride is not None:
-    decoder_height = scale_dimension(model_options.crop_size[0],
-                                     1.0 / model_options.decoder_output_stride)
-    decoder_width = scale_dimension(model_options.crop_size[1],
-                                    1.0 / model_options.decoder_output_stride)
-    features = refine_by_decoder(
-        features,
-        end_points,
-        decoder_height=decoder_height,
-        decoder_width=decoder_width,
-        decoder_use_separable_conv=model_options.decoder_use_separable_conv,
-        model_variant=model_options.model_variant,
-        weight_decay=weight_decay,
-        reuse=reuse,
-        is_training=is_training,
-        fine_tune_batch_norm=fine_tune_batch_norm)
-
   outputs_to_logits = {}
   for output in sorted(model_options.outputs_to_num_classes):
     outputs_to_logits[output] = get_branch_logits(
@@ -482,107 +452,6 @@ def _get_logits(images,
         scope_suffix=output)
 
   return outputs_to_logits
-
-
-def refine_by_decoder(features,
-                      end_points,
-                      decoder_height,
-                      decoder_width,
-                      decoder_use_separable_conv=False,
-                      model_variant=None,
-                      weight_decay=0.0001,
-                      reuse=None,
-                      is_training=False,
-                      fine_tune_batch_norm=False):
-  """Adds the decoder to obtain sharper segmentation results.
-
-  Args:
-    features: A tensor of size [batch, features_height, features_width,
-      features_channels].
-    end_points: A dictionary from components of the network to the corresponding
-      activation.
-    decoder_height: The height of decoder feature maps.
-    decoder_width: The width of decoder feature maps.
-    decoder_use_separable_conv: Employ separable convolution for decoder or not.
-    model_variant: Model variant for feature extraction.
-    weight_decay: The weight decay for model variables.
-    reuse: Reuse the model variables or not.
-    is_training: Is training or not.
-    fine_tune_batch_norm: Fine-tune the batch norm parameters or not.
-
-  Returns:
-    Decoder output with size [batch, decoder_height, decoder_width,
-      decoder_channels].
-  """
-  batch_norm_params = {
-      'is_training': is_training and fine_tune_batch_norm,
-      'decay': 0.9997,
-      'epsilon': 1e-5,
-      'scale': True,
-  }
-
-  with slim.arg_scope(
-      [slim.conv2d, slim.separable_conv2d],
-      weights_regularizer=slim.l2_regularizer(weight_decay),
-      activation_fn=tf.nn.relu,
-      normalizer_fn=slim.batch_norm,
-      padding='SAME',
-      stride=1,
-      reuse=reuse):
-    with slim.arg_scope([slim.batch_norm], **batch_norm_params):
-      with tf.variable_scope(DECODER_SCOPE, DECODER_SCOPE, [features]):
-        feature_list = feature_extractor.networks_to_feature_maps[
-            model_variant][feature_extractor.DECODER_END_POINTS]
-        if feature_list is None:
-          tf.logging.info('Not found any decoder end points.')
-          return features
-        else:
-          decoder_features = features
-          for i, name in enumerate(feature_list):
-            decoder_features_list = [decoder_features]
-
-            # MobileNet variants use different naming convention.
-            if 'mobilenet' in model_variant:
-              feature_name = name
-            else:
-              feature_name = '{}/{}'.format(
-                  feature_extractor.name_scope[model_variant], name)
-            decoder_features_list.append(
-                slim.conv2d(
-                    end_points[feature_name],
-                    48,
-                    1,
-                    scope='feature_projection' + str(i)))
-            # Resize to decoder_height/decoder_width.
-            for j, feature in enumerate(decoder_features_list):
-              decoder_features_list[j] = tf.image.resize_bilinear(
-                  feature, [decoder_height, decoder_width], align_corners=True)
-              decoder_features_list[j].set_shape(
-                  [None, decoder_height, decoder_width, None])
-            decoder_depth = 256
-            if decoder_use_separable_conv:
-              decoder_features = split_separable_conv2d(
-                  tf.concat(decoder_features_list, 3),
-                  filters=decoder_depth,
-                  rate=1,
-                  weight_decay=weight_decay,
-                  scope='decoder_conv0')
-              decoder_features = split_separable_conv2d(
-                  decoder_features,
-                  filters=decoder_depth,
-                  rate=1,
-                  weight_decay=weight_decay,
-                  scope='decoder_conv1')
-            else:
-              num_convs = 2
-              decoder_features = slim.repeat(
-                  tf.concat(decoder_features_list, 3),
-                  num_convs,
-                  slim.conv2d,
-                  decoder_depth,
-                  3,
-                  scope='decoder_conv' + str(i))
-          return decoder_features
 
 
 def get_branch_logits(features,
