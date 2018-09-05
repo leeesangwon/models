@@ -164,5 +164,5 @@ def get(dataset,
       batch_size=batch_size,
       num_threads=num_threads,
       capacity=32 * batch_size,
-      allow_smaller_final_batch=not is_training,
+      allow_smaller_final_batch=False, # set batch_size 1 when evaluate
       dynamic_pad=True)
