@@ -42,7 +42,7 @@ cd "${CURRENT_DIR}"
 
 # Set up the working directories.
 DATASET_FOLDER="cityscapes"
-EXP_FOLDER="exp/train_on_train_set_mobilenetv2"
+EXP_FOLDER="exp/train_on_train_set_pspnet_mobilenetv2"
 INIT_FOLDER="${WORK_DIR}/${DATASET_DIR}/${DATASET_FOLDER}/init_models"
 TRAIN_LOGDIR="${WORK_DIR}/${DATASET_DIR}/${DATASET_FOLDER}/${EXP_FOLDER}/train"
 EVAL_LOGDIR="${WORK_DIR}/${DATASET_DIR}/${DATASET_FOLDER}/${EXP_FOLDER}/eval"
@@ -62,7 +62,7 @@ cd "${CURRENT_DIR}"
 CITYSCAPES_DATASET="${WORK_DIR}/${DATASET_DIR}/${DATASET_FOLDER}/tfrecord"
 
 # Train 10 iterations.
-NUM_ITERATIONS=90000
+# NUM_ITERATIONS=90000
 python "${WORK_DIR}"/train_pspnet.py \
   --logtostderr \
   --train_split="train" \
@@ -121,6 +121,7 @@ python "${WORK_DIR}"/vis_pspnet.py \
   --dataset_dir="${CITYSCAPES_DATASET}" \
   --max_number_of_iterations=1
 
+# check speed
 python "${WORK_DIR}"/speed_pspnet.py \
   --logtostderr \
   --speed_split="val" \
